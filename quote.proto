@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+// Reverse-engineered from raw MQTT payload bytes captured live against
+// api.sandbox.webull.com / data-api.sandbox.webull.com on 2026-08-18.
+// Confirmed field numbers and types by manually decoding the protobuf wire
+// format of a real message:
+//
+//   b'\n%\n\x04AAPL\x12\t913256135\x1a\r1787082068825"\x03RTH
+//      \x12\r\n\x06310.12\x12\x03114\x1a\x0c\n\x06310.10\x12\x0280'
+//
+// Not sourced from an official .proto file — Webull doesn't appear to
+// publish one. If a future message includes fields not covered here
+// (e.g. multiple price levels for depth data), extend this schema and
+// re-verify against raw bytes the same way.
+
+message PriceLevel {
+  string price = 1;
+  string size = 2;
+}
+
+message Basic {
+  string symbol = 1;
+  string instrument_id = 2;
+  string timestamp = 3;       // epoch milliseconds, as a string
+  string trading_session = 4; // e.g. "RTH", "NIGHT"
+}
+
+message Quote {
+  Basic basic = 1;
+  PriceLevel ask = 2;
+  PriceLevel bid = 3;
+}
+
+// Reverse-engineered the same way, from a real TICK-subscription payload:
+//   b'\n%\n\x04AAPL\x12\t913256135\x1a\r1787084967594"\x03ATH
+//      \x12\x0816:29:27\x1a\x06309.77"\x0239*\x01S2\r1787084967582'
+// Gives the actual LAST TRADED price/size, unlike Quote's bid/ask —
+// use this for bar construction when trade-price accuracy matters more
+// than update frequency (Quote updates far more often but is only a
+// bid/ask snapshot, not an executed price).
+message Tick {
+  Basic basic = 1;
+  string trade_time = 2;      // formatted "HH:MM:SS", exchange local time
+  string price = 3;           // the actual last trade price
+  string size = 4;
+  string flag = 5;            // observed value "S" or "N" — likely a sale-condition code, meaning unconfirmed
+  string trade_timestamp = 6; // epoch ms as string — close to but not always identical to basic.timestamp
+}

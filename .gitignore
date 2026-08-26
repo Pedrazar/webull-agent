@@ -1,0 +1,24 @@
+# secrets
+.env
+debug_test.py
+
+# logs (Webull SDK logs request/response bodies incl. app key + account id)
+*.log
+*.log.*
+
+# deps / build / venv
+node_modules/
+dist/
+venv/
+
+# stray local runtime scratch, not source
+agent_run.pid
+
+# watchlist.json, trades.jsonl, daily-notes.jsonl, and daily-reviews/ are
+# INTENTIONALLY tracked, not ignored, as of the 2026-08-25 move to GitHub
+# Actions — they're the durable, git-committed persistence layer across
+# ephemeral Actions job runs (see CLAUDE.md's Remote hosting section). Only
+# genuinely local secrets/logs stay ignored below.
+
+# cached production access token — a live credential, not source
+prod-token.json

@@ -1,0 +1,24 @@
+{
+  "name": "webull-agent",
+  "version": "1.0.0",
+  "description": "This is a starting scaffold for running your EMA-9/EMA-20 crossover strategy live against Webull's OpenAPI, since no official SDK exists for Node/TypeScript (only Python and Java are officially supported).",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "dotenv": "^17.4.2",
+    "mqtt": "^5.15.2",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "protobufjs": "^8.7.2"
+  }
+}

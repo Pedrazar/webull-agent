@@ -1,0 +1,56 @@
+name: Trading agent
+
+# Single fixed UTC trigger, safely before market open in both EDT (9:30am
+# ET = 13:30 UTC) and EST (9:30am ET = 14:30 UTC) — main.ts's own
+# waitForMarketOpen() (DST-safe, reads real America/New_York time) is what
+# actually aligns the start to 9:30am ET regardless of season. See
+# CLAUDE.md's Remote hosting section for why this replaced dual-cron
+# DST handling.
+on:
+  schedule:
+    - cron: "0 13 * * 1-5"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  agent:
+    runs-on: ubuntu-latest
+    # Regular session is 9:30am-3:30pm ET (6 hours) since the EOD close
+    # moved up 30 min on 2026-08-25 — this margin covers the pre-open wait
+    # plus a safety buffer under the 360-minute hosted-runner hard cap.
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - run: npm ci
+
+      - name: Run trading agent
+        env:
+          WEBULL_APP_KEY: ${{ secrets.WEBULL_APP_KEY }}
+          WEBULL_APP_SECRET: ${{ secrets.WEBULL_APP_SECRET }}
+          WEBULL_BASE_URL: ${{ secrets.WEBULL_BASE_URL }}
+          WEBULL_SANDBOX_ACCOUNT_ID: ${{ secrets.WEBULL_SANDBOX_ACCOUNT_ID }}
+        run: npx tsx main.ts
+
+      # Runs even if the agent step failed/timed out, so a partial day's
+      # trades.jsonl/watchlist.json still get saved instead of lost with
+      # the ephemeral runner filesystem.
+      - name: Commit trade log + watchlist
+        if: always()
+        run: |
+          git config user.name "webull-agent"
+          git config user.email "actions@users.noreply.github.com"
+          git add trades.jsonl watchlist.json daily-notes.jsonl
+          if git diff --cached --quiet; then
+            echo "nothing to commit"
+          else
+            git commit -m "agent run $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
