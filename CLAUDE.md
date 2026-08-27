@@ -89,6 +89,75 @@ Windows Task Scheduler, weekdays only, local (Pacific) time: `WebullWatchlistScr
 
 **Root-caused and fixed properly, 2026-08-24**: a whole trading day (Monday) was lost — every one of the four tasks (`WebullPreventLidSleep` 5:45am through `WebullDailyReview` 1:15pm) missed its trigger, and this time none of them even attempted a catch-up (no error, just silence — worse than the earlier `0x800710E0` cases). Event log showed the laptop entered sleep at 5:29am (`Sleep Reason: Button or Lid`, confirmed by the user — the lid was physically closed) and didn't wake until 7:41pm, 16 minutes before `WebullPreventLidSleep`'s own 5:45am trigger could ever run. This is the fundamental flaw in the whole prevent/restore approach: it depends on the machine already being awake at trigger time to defend against it going to sleep, so an early lid-close simply wins the race every time. **Real fix**: enabled Task Scheduler's `WakeToRun` setting on all five tasks (`WebullPreventLidSleep`, `WebullRestoreLidSleep`, `WebullWatchlistScreener`, `WebullAgentStart`, `WebullDailyReview`) — this proactively wakes the machine from sleep AT the trigger time (a real OS feature for exactly this, distinct from and more reliable than the passive "missed trigger, catch up whenever next possible" mechanism that kept failing). Required two changes: (1) `Set-ScheduledTask` with `.Settings.WakeToRun = $true` needs elevation (`Access is denied` non-elevated, same as any Settings/Principal change to these tasks) — done from an elevated PowerShell per-task; (2) wake timers must be allowed by the power scheme itself (`powercfg /query SCHEME_CURRENT SUB_SLEEP bd3b718a-0680-4d9d-8ab2-e1d2b4ac806d`, "Allow wake timers") — this machine already had it on AC but **not** DC (battery), fixed via `powercfg /setdcvalueindex SCHEME_CURRENT SUB_SLEEP bd3b718a-0680-4d9d-8ab2-e1d2b4ac806d 1` (no elevation needed for this one). XML backups in `.task-xml/` re-exported from live state afterward to stay in sync (`schtasks /Query /TN <name> /XML`) — each now shows `<WakeToRun>true</WakeToRun>`. Tradeoff worth knowing: the laptop will now physically wake itself unattended at each trigger time even from battery, which costs some battery/does draw power briefly — acceptable given the alternative is silently losing an entire trading day.
 
+## Remote hosting (GitHub Actions) — screener + agent, 2026-08-25/26
+
+After losing two full trading days (2026-08-24, 2026-08-25) despite S4U,
+lid/idle sleep prevention, AND `WakeToRun` (see Scheduling above — and it
+happened again on 2026-08-26 for `WebullDailyReview` specifically, see
+below), the screener + trading agent moved off this laptop entirely.
+`WebullAgentStart` and `WebullWatchlistScreener` are now **disabled** (not
+deleted — `schtasks /Change /TN <name> /DISABLE`, reversible via `/ENABLE`)
+as of 2026-08-26, confirmed after one clean live cloud run. Do not
+re-enable both this AND leave the GitHub Actions workflow active at the
+same time — that would double-place every trade on the same sandbox
+account.
+
+- **Repo**: `https://github.com/Pedrazar/webull-agent` (private). `gh` CLI
+  is installed and authenticated as `Pedrazar` on this machine.
+- **Workflow**: `.github/workflows/agent.yml` — single cron trigger `0 13
+  * * 1-5` (13:00 UTC weekdays), safely before 9:30am ET in both EDT and
+  EST, plus `workflow_dispatch` for manual runs. `permissions: contents:
+  write`, `timeout-minutes: 350` (margin under the 360-min hosted-runner
+  hard cap — the 9:30am-3:30pm ET session is 6 hours since the EOD-close
+  change above).
+- **No DST-dependent dual-cron trickery**: rather than two seasonal cron
+  triggers, `main.ts` gates itself on real `America/New_York` time
+  (`nyNow()`, same DST-safe `Intl` pattern the EOD check already used) —
+  `exitIfPastClose()` exits immediately if started already past 3:30pm ET
+  (a stale/late trigger — also the safe zero-risk way to smoke-test the
+  workflow's plumbing), and `waitForMarketOpen()` polls every 30s until
+  9:30am ET before reconciling/connecting. The job can start up to ~90 min
+  early without doing anything real.
+- **Screener runs in-process now**, not as a separate scheduled job:
+  `stockScreener.ts`'s `runScreener(client?)` is exported and called
+  directly by `main.ts` (`loadOrRunScreener()`) at startup and on the
+  hourly recheck, falling back to whatever's already in `watchlist.json`
+  (then `MSTZ`) if the live run fails or finds nothing. Removes the
+  cross-process dependency the old two-Windows-tasks setup had.
+- **Bounded job, not always-on**: after `closeAllEndOfDay()` + one final
+  `checkForFills()`, `main.ts` calls `stream.disconnect()` then
+  `process.exit(0)` — the process now finishes on its own instead of
+  running until killed, which is what makes it fit as a single Actions job.
+- **Persistence**: `trades.jsonl`, `watchlist.json`, and `daily-notes.jsonl`
+  are now **intentionally git-tracked** (see `.gitignore`'s comment), since
+  the Actions filesystem is ephemeral per run. The workflow's final step
+  commits + pushes them (`if: always()`, so a partial/failed day's data
+  still isn't lost) — `git diff --cached --quiet` before committing means
+  a no-trades day (like 2026-08-26, see below) correctly produces no
+  commit at all, not an empty one.
+- **Deliberately out of scope**: the production "Gap up" watchlist push
+  (`pushToGapUpWatchlist` in `stockScreener.ts`) is NOT wired up in Actions
+  — `WEBULL_PROD_APP_KEY`/`SECRET` were never added as repo secrets, so it
+  silently no-ops every run exactly like it already did when those env
+  vars were unset locally. Keeps the cloud runner's credential footprint
+  to sandbox-only.
+- **Daily review stays local** (explicit choice, not yet revisited) — it's
+  not time-critical the way missing a trading day is, and moving it to
+  Actions would need a new Anthropic API key + per-token billing separate
+  from the Claude Code subscription this project otherwise uses.
+  `WebullDailyReview`/`WebullPreventLidSleep`/`WebullRestoreLidSleep` are
+  unchanged and still enabled. **Caveat found immediately, 2026-08-26**:
+  even with `WakeToRun` set (see Scheduling above), `WebullDailyReview`
+  still missed its trigger that same day — the fix does not appear fully
+  reliable on this hardware after all. Not yet re-diagnosed; if this
+  keeps recurring, revisit whether review should move off this laptop too.
+- **First live cloud run, 2026-08-26 (Wednesday)**: ran 13:43–19:25 UTC,
+  gated correctly, watched `BULL, XXI, MSTZ, NVTS` all session — zero
+  `LONG_ENTRY` signals fired all day (every bar logged `signal=NONE`), so
+  zero trades. A legitimate quiet-day outcome, not a bug — confirmed by
+  reading the full run log, not assumed. This is the "confirmed clean run"
+  the local tasks were disabled after.
+
 ## EOD close: known-fixed bug + a real remaining gap
 
 First live (paper) day, 2026-08-19: the scheduled 3:55pm ET `closeAllEndOfDay()` failed for both open positions (PSNL, MRVI). Root cause, now fixed in `orderManager.ts` (`closeOneEndOfDay` + per-position try/catch in `closeAllEndOfDay`):
