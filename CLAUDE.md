@@ -152,11 +152,38 @@ account.
   reliable on this hardware after all. Not yet re-diagnosed; if this
   keeps recurring, revisit whether review should move off this laptop too.
 - **First live cloud run, 2026-08-26 (Wednesday)**: ran 13:43–19:25 UTC,
-  gated correctly, watched `BULL, XXI, MSTZ, NVTS` all session — zero
-  `LONG_ENTRY` signals fired all day (every bar logged `signal=NONE`), so
-  zero trades. A legitimate quiet-day outcome, not a bug — confirmed by
-  reading the full run log, not assumed. This is the "confirmed clean run"
-  the local tasks were disabled after.
+  gated correctly, watched `BULL, XXI, MSTZ, NVTS` all session, EOD close
+  and commit-back both worked. Logged zero `LONG_ENTRY` signals all day —
+  BUT this was not actually a clean quiet day, see the missed-crossover gap
+  immediately below. This is still the run the local tasks were disabled
+  after; the gap found afterward is a real, separate issue, not a reason to
+  revert the cutover itself.
+
+- **Known gap found the same day, not yet fixed (user chose "leave it for
+  now" when offered a fix)**: MSTZ had a genuine, valid EMA9/20 crossover
+  right at 9:30am ET/13:30 UTC (market open) — 0.445% separation, well
+  above the 0.3% `minSeparationPct` filter, confirmed by independently
+  refetching the day's historical bars and replaying the exact crossover
+  math offline. It never fired `LONG_ENTRY` live. Root cause: GitHub's own
+  `schedule` trigger ran the job ~43 minutes late (job didn't actually
+  start until 13:43 UTC, 13 min after the crossover bar), and
+  `seedSymbol()`'s historical-bar seeding (`signals.seed()` in
+  `signalEngine.ts`) only accumulates EMA state — it does NOT run
+  `onBarClose()`'s crossover-detection logic, so any crossover that
+  happens inside the 30-bar seed window before the live stream starts is
+  silently absorbed with no log line and no signal, ever. The old local
+  Task Scheduler setup was far less exposed to this (its triggers fire
+  much more punctually than GitHub Actions' `schedule` event, which is
+  documented to run late, especially under load).
+  - **If revisited**: the agreed direction (not yet implemented) is (1)
+    move the cron trigger earlier for more buffer, AND (2) during startup,
+    replay the historical bars between actual market open and "now" through
+    the real `onBarClose()` detection path instead of the silent `seed()`
+    path, so a late start produces a clearly logged "missed entry" instead
+    of nothing — but explicitly **do not auto-place a trade** on a signal
+    detected this way (user's call: a crossover caught minutes late means
+    the intended entry price is already gone, so log-only, don't chase it
+    at a stale/current price with a stop sized for the original setup).
 
 ## EOD close: known-fixed bug + a real remaining gap
 
