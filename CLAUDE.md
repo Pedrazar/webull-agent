@@ -104,6 +104,24 @@ re-enable both this AND leave the GitHub Actions workflow active at the
 same time — that would double-place every trade on the same sandbox
 account.
 
+**Laptop's original sleep behavior restored, 2026-08-28**: with the agent
++ screener no longer needing this machine awake all day, `WebullPreventLidSleep`
+and `WebullRestoreLidSleep` are now **disabled** too (same reversible
+`/DISABLE`, needed elevation since both run with `RunLevel=Highest`) —
+they served no purpose once nothing local needed protecting from sleep for
+hours at a stretch. Lid-close-action and idle-timeout-to-sleep
+(`STANDBYIDLE`) were already sitting at their original values (AC=Sleep/
+DC=Hibernate, 3-minute idle timeout) at the time, outside the old
+trading-hours window, so no registry values needed changing — just
+stopping the tasks that would have re-disabled sleep again the next
+weekday morning. Left AS-IS, deliberately: "Allow wake timers" on DC
+(battery), enabled back on 2026-08-24 — reverting it would work against
+`WebullDailyReview`'s `WakeToRun` (still the one task that actually needs
+this machine to wake itself, even if not yet proven reliable — see the
+2026-08-26 caveat below). Net effect: this laptop can now sleep normally
+again; `WebullDailyReview` is the only remaining task depending on it
+waking up on schedule, with the same reliability caveats as before.
+
 - **Repo**: `https://github.com/Pedrazar/webull-agent` (private). `gh` CLI
   is installed and authenticated as `Pedrazar` on this machine.
 - **Workflow**: `.github/workflows/agent.yml` — three redundant cron
