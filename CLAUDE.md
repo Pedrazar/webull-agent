@@ -106,12 +106,15 @@ account.
 
 - **Repo**: `https://github.com/Pedrazar/webull-agent` (private). `gh` CLI
   is installed and authenticated as `Pedrazar` on this machine.
-- **Workflow**: `.github/workflows/agent.yml` — single cron trigger `0 13
-  * * 1-5` (13:00 UTC weekdays), safely before 9:30am ET in both EDT and
-  EST, plus `workflow_dispatch` for manual runs. `permissions: contents:
-  write`, `timeout-minutes: 350` (margin under the 360-min hosted-runner
-  hard cap — the 9:30am-3:30pm ET session is 6 hours since the EOD-close
-  change above).
+- **Workflow**: `.github/workflows/agent.yml` — three redundant cron
+  triggers (13:17, 13:47, 14:17 UTC weekdays, see the 2026-08-27 incident
+  below for why three off-the-hour slots instead of one on-the-hour one),
+  all safely before 9:30am ET in both EDT and EST, plus `workflow_dispatch`
+  for manual runs. A `concurrency` block prevents any two from actually
+  running a session in parallel. `permissions: contents: write`,
+  `timeout-minutes: 350` (margin under the 360-min hosted-runner hard cap —
+  the 9:30am-3:30pm ET session is 6 hours since the EOD-close change
+  above).
 - **No DST-dependent dual-cron trickery**: rather than two seasonal cron
   triggers, `main.ts` gates itself on real `America/New_York` time
   (`nyNow()`, same DST-safe `Intl` pattern the EOD check already used) —
@@ -186,6 +189,30 @@ account.
     detected this way (user's call: a crossover caught minutes late means
     the intended entry price is already gone, so log-only, don't chase it
     at a stale/current price with a stop sized for the original setup).
+
+- **Whole day silently missed, 2026-08-27 (Thursday)** — a much more
+  severe version of the same underlying issue as the 43-min-late gap
+  above. The `"0 13 * * 1-5"` trigger fired **9.5 hours late** (13:00 UTC
+  intended, 22:39 UTC actual, confirmed via `gh run list`/`gh run view
+  --log`, not assumed) — by the time it ran, `exitIfPastClose()` correctly
+  saw NY time 18:40 and no-op'd in 16 seconds. GitHub's own docs warn
+  scheduled workflows can be delayed and specifically call out the top of
+  the hour as a known high-load time to avoid — our trigger landed exactly
+  on `:00`. **Fixed** in `.github/workflows/agent.yml`: moved off the hour
+  (`:17`/`:47`) AND fanned out to three redundant slots across the
+  pre-market window (13:17, 13:47, 14:17 UTC) instead of one, so a single
+  delayed/dropped trigger doesn't cost the whole day. Made safe by a
+  `concurrency: group: trading-agent-session, cancel-in-progress: false`
+  block — a second trigger firing while a session is already running
+  QUEUES instead of starting a parallel session (which would double-trade
+  the same sandbox account); it just runs later and no-ops via
+  `exitIfPastClose()` once its turn comes. Not yet proven to fully solve
+  it (one bad day is one data point) — if a day still gets missed entirely
+  despite three spread-out attempts, that points at a more systemic GitHub
+  Actions scheduling problem for this repo, not just hour-boundary
+  congestion, and would justify an external trigger (e.g. a third-party
+  cron service calling the GitHub API's workflow-dispatch endpoint)
+  instead of relying on GitHub's own `schedule` event at all.
 
 ## EOD close: known-fixed bug + a real remaining gap
 

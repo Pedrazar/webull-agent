@@ -1,15 +1,34 @@
 name: Trading agent
 
-# Single fixed UTC trigger, safely before market open in both EDT (9:30am
-# ET = 13:30 UTC) and EST (9:30am ET = 14:30 UTC) — main.ts's own
-# waitForMarketOpen() (DST-safe, reads real America/New_York time) is what
-# actually aligns the start to 9:30am ET regardless of season. See
-# CLAUDE.md's Remote hosting section for why this replaced dual-cron
-# DST handling.
+# CONFIRMED live 2026-08-27: a single "0 13 * * 1-5" trigger was delayed by
+# GitHub's own scheduler from 13:00 UTC to 22:39 UTC (9.5 hours) -- by the
+# time it ran, main.ts's exitIfPastClose() correctly no-op'd since the
+# 3:30pm ET close had long passed, so the whole day was silently missed.
+# GitHub's own docs warn that scheduled workflows can be delayed, and that
+# the top of the hour is a known high-load time to avoid -- our trigger hit
+# exactly that. Fixed with two changes:
+#   1. Off-the-hour minutes (:17/:47), not :00.
+#   2. Three redundant slots across the pre-market/early-session window
+#      instead of one -- if any single trigger is delayed or dropped,
+#      another is likely to land close to the real 9:30am ET open. Safe
+#      only because of the concurrency block below: a second trigger that
+#      fires while a session is already running QUEUES instead of starting
+#      a parallel session (which would double-trade the same sandbox
+#      account) -- it just runs later, sees exitIfPastClose() is true by
+#      then, and no-ops.
+# main.ts's own waitForMarketOpen() (DST-safe, reads real America/New_York
+# time) is what actually aligns the start to 9:30am ET regardless of
+# season -- see CLAUDE.md's Remote hosting section.
 on:
   schedule:
-    - cron: "0 13 * * 1-5"
+    - cron: "17 13 * * 1-5"
+    - cron: "47 13 * * 1-5"
+    - cron: "17 14 * * 1-5"
   workflow_dispatch: {}
+
+concurrency:
+  group: trading-agent-session
+  cancel-in-progress: false
 
 permissions:
   contents: write
