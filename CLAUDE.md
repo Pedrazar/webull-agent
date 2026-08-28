@@ -164,31 +164,52 @@ account.
   after; the gap found afterward is a real, separate issue, not a reason to
   revert the cutover itself.
 
-- **Known gap found the same day, not yet fixed (user chose "leave it for
-  now" when offered a fix)**: MSTZ had a genuine, valid EMA9/20 crossover
-  right at 9:30am ET/13:30 UTC (market open) — 0.445% separation, well
-  above the 0.3% `minSeparationPct` filter, confirmed by independently
+- **Fixed, 2026-08-27** (found the day before, user chose "leave it for
+  now" initially, then revisited same-day after the separate cron-delay
+  incident above): MSTZ had a genuine, valid EMA9/20 crossover right at
+  9:30am ET/13:30 UTC (market open) on 2026-08-26 — 0.445% separation,
+  well above the 0.3% `minSeparationPct` filter, confirmed by independently
   refetching the day's historical bars and replaying the exact crossover
-  math offline. It never fired `LONG_ENTRY` live. Root cause: GitHub's own
-  `schedule` trigger ran the job ~43 minutes late (job didn't actually
-  start until 13:43 UTC, 13 min after the crossover bar), and
+  math offline. It never fired `LONG_ENTRY` live. Root cause:
   `seedSymbol()`'s historical-bar seeding (`signals.seed()` in
   `signalEngine.ts`) only accumulates EMA state — it does NOT run
-  `onBarClose()`'s crossover-detection logic, so any crossover that
-  happens inside the 30-bar seed window before the live stream starts is
-  silently absorbed with no log line and no signal, ever. The old local
-  Task Scheduler setup was far less exposed to this (its triggers fire
-  much more punctually than GitHub Actions' `schedule` event, which is
-  documented to run late, especially under load).
-  - **If revisited**: the agreed direction (not yet implemented) is (1)
-    move the cron trigger earlier for more buffer, AND (2) during startup,
-    replay the historical bars between actual market open and "now" through
-    the real `onBarClose()` detection path instead of the silent `seed()`
-    path, so a late start produces a clearly logged "missed entry" instead
-    of nothing — but explicitly **do not auto-place a trade** on a signal
-    detected this way (user's call: a crossover caught minutes late means
-    the intended entry price is already gone, so log-only, don't chase it
-    at a stale/current price with a stop sized for the original setup).
+  `onBarClose()`'s crossover-detection logic (`seed()` updates
+  `ema9`/`ema20` but never touches `prevEma9`/`prevEma20`, so the
+  `crossedUp`/`crossedDown` check on the first live bar after startup can
+  never fire even if a real cross happened during the gap), so any
+  crossover inside the 30-bar seed window before the live stream starts
+  was silently absorbed with no log line and no signal, ever — worse the
+  later the job actually started, which GitHub Actions' `schedule` event
+  makes more likely than the old local Task Scheduler setup did.
+  **Fix**: `seedSymbol()` now splits the fetched 30-bar history at today's
+  9:30am ET open using `isAtOrAfterMarketOpen()` — bars from before the
+  open still go through silent `seed()` (pure EMA warmup, no meaningful
+  entry decision exists pre-open anyway); bars at-or-after the open are
+  replayed one at a time through the REAL `signals.onBarClose()` path
+  instead. Any `LONG_ENTRY` found this way is logged as a new
+  `missed_entry` trade event (`tradeLogger.ts`) — symbol, the historical
+  bar's own timestamp (`barTime`, not detection time), price, volume — and
+  the daily review reports these explicitly (see `run-daily-review.ps1`).
+  Deliberately **never auto-traded**, per the user's explicit call: a
+  crossover caught minutes late means the intended entry price is already
+  gone, so log-only, don't chase it at a stale/current price with a stop
+  sized for the original setup. The "move the cron trigger earlier" half
+  of the originally-agreed two-part fix was deliberately dropped — once
+  the replay covers the actual gap regardless of how late the job starts
+  (within the 30-bar/30-min lookback), moving the trigger earlier only
+  adds GitHub Actions billable wait-minutes for a private repo without
+  closing any gap the replay doesn't already close. CONFIRMED live against
+  real current bars for MSTZ/NVTS/BULL before shipping (no crashes,
+  correct pre-open/session split, `onBarClose()`'s pending-confirmation
+  mechanism fired correctly mid-replay). **Known residual limit**: the
+  historical fetch is a fixed `count=30` (30 minutes) — if a start is late
+  enough that ALL 30 bars fall after 9:30am, there are zero pre-open bars
+  left for `seed()`'s EMA warmup, so the replay has to warm up from
+  scratch and won't evaluate real crossovers until ~20 bars into the
+  replay itself. Not fixed (no real incident has hit this yet, and the
+  three-slot cron fix above keeps typical delays well under 30 min) — a
+  dynamic bar count scaled to how late the start is would close it if it
+  ever comes up.
 
 - **Whole day silently missed, 2026-08-27 (Thursday)** — a much more
   severe version of the same underlying issue as the 43-min-late gap

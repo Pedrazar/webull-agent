@@ -49,6 +49,18 @@ Files to read:
     not from a bar close directly, so treat this as "volume around the
     time of the exit," not the exact bar the fill executed in), or null if
     unavailable.
+  - missed_entry: {symbol, barTime, price, volume} -- a genuine LONG_ENTRY
+    crossover was found during startup's historical-bar catch-up replay
+    (added 2026-08-27, after a real missed MSTZ crossover at market open
+    caused by a late job start), but by the time it was detected the price
+    was already stale, so it was deliberately NOT traded. barTime is the
+    historical bar's own timestamp, not when this was detected -- if
+    barTime is more than a few minutes before this trading day's first
+    entry_placed/bar-log activity, that's how late the session actually
+    started that day. Always call these out explicitly in the report (a
+    separate "Missed entries" note, not folded into the metrics table) --
+    this represents a real opportunity cost even though no trade exists to
+    compute P&L from.
 - watchlist.json -- the symbols the morning screener (stockScreener.ts)
   selected for today (criteria: market cap > $300M, price $1-$20, gap >=
   5%, avg volume > 1M, relative volume > 2, float > 20M).
@@ -90,12 +102,19 @@ Task:
    too small to draw a real conclusion.
 5. Format your reply as the full markdown report: a one-paragraph summary
    at the top, a metrics table, then "What worked", "What didn't", a
-   "Manual notes" section (only if daily-notes.jsonl has entries for
-   today -- omit the section entirely otherwise), and "Suggested
-   directions to consider". Output ONLY the report -- no preamble like
-   "Here's my analysis," no closing remarks after it.
-6. If trades.jsonl doesn't exist yet or has no entries for today, output a
-   short report noting no trading activity occurred and stop there.
+   "Missed entries" section (only if any missed_entry events exist for
+   today -- omit entirely otherwise), a "Manual notes" section (only if
+   daily-notes.jsonl has entries for today -- omit the section entirely
+   otherwise), and "Suggested directions to consider". Output ONLY the
+   report -- no preamble like "Here's my analysis," no closing remarks
+   after it.
+6. If trades.jsonl has no entry_placed/exit_filled/entry_rejected events
+   for today, but DOES have one or more missed_entry events, don't call it
+   "no trading activity" -- report it as a missed-entry day: no trades
+   were placed, but a genuine crossover was found late (see the
+   missed_entry field description above) and deliberately not chased.
+   Only fall back to a short "no trading activity occurred" report if
+   trades.jsonl doesn't exist yet or has no entries of ANY kind for today.
 
 Keep the report factual and specific to today's numbers -- this is a data
 summary for a human to act on, not a persuasive pitch.

@@ -54,6 +54,16 @@ export type TradeEvent =
       newStopPrice: number;
     }
   | {
+      event: "missed_entry";
+      symbol: string;
+      // The historical bar's own timestamp (ISO string from the bars
+      // endpoint), NOT when this was detected/logged — the whole point is
+      // showing how stale the signal already was by the time it was found.
+      barTime: string;
+      price: number;
+      volume: number | null;
+    }
+  | {
       event: "exit_filled";
       symbol: string;
       exitReason: "HARD_STOP" | "BREAKEVEN" | "TRAILING" | "EOD";

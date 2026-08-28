@@ -21,10 +21,11 @@ import fs from "fs";
 import path from "path";
 import { WebullClient } from "./webullClient";
 import { MarketDataStream } from "./marketDataStream";
-import { BarAggregator } from "./barAggregator";
+import { BarAggregator, RawBar } from "./barAggregator";
 import { SignalEngine } from "./signalEngine";
 import { OrderManager } from "./orderManager";
 import { runScreener } from "./stockScreener";
+import { logTradeEvent } from "./tradeLogger";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -103,12 +104,22 @@ const nyTimeFormatter = new Intl.DateTimeFormat("en-US", {
   hourCycle: "h23",
 });
 
-function nyNow(): { hour: number; minute: number } {
-  const parts = nyTimeFormatter.formatToParts(new Date());
+function nyTimeOf(date: Date): { hour: number; minute: number } {
+  const parts = nyTimeFormatter.formatToParts(date);
   return {
     hour: parseInt(parts.find((p) => p.type === "hour")?.value ?? "-1", 10),
     minute: parseInt(parts.find((p) => p.type === "minute")?.value ?? "-1", 10),
   };
+}
+
+function nyNow(): { hour: number; minute: number } {
+  return nyTimeOf(new Date());
+}
+
+/** True for a bar timestamped at or after today's 9:30am ET regular-hours open. */
+function isAtOrAfterMarketOpen(date: Date): boolean {
+  const { hour, minute } = nyTimeOf(date);
+  return hour > 9 || (hour === 9 && minute >= 30);
 }
 
 /**
@@ -135,7 +146,7 @@ function exitIfPastClose(): void {
 async function waitForMarketOpen(): Promise<void> {
   for (;;) {
     const { hour, minute } = nyNow();
-    if (hour > 9 || (hour === 9 && minute >= 30)) {
+    if (isAtOrAfterMarketOpen(new Date())) {
       console.log(`[startup] market open (NY time ${hour}:${String(minute).padStart(2, "0")}), proceeding`);
       return;
     }
@@ -145,11 +156,33 @@ async function waitForMarketOpen(): Promise<void> {
 }
 
 interface HistoricalBar {
-  time: string;
+  time: string; // ISO string with explicit UTC offset, e.g. "2026-08-17T16:48:00.000+0000"
+  open: string;
+  high: string;
+  low: string;
   close: string;
+  volume: string;
 }
 
-// Shared by the startup seeding loop and the hourly dynamic-add path.
+/**
+ * Shared by the startup seeding loop and the hourly dynamic-add path.
+ *
+ * Splits the fetched history at today's 9:30am ET open: bars from BEFORE
+ * the open are pure EMA warmup (silently folded in via signals.seed() — no
+ * meaningful entry decision exists before the market opens). Bars AT OR
+ * AFTER the open are replayed through the REAL signals.onBarClose()
+ * detection path instead, one at a time in order, so a late job start (see
+ * CLAUDE.md's Remote hosting section, the 2026-08-26/27 incidents) can no
+ * longer silently swallow a genuine crossover the way seed()-only always
+ * did — seed() updates ema9/ema20 but never touches prevEma9/prevEma20, so
+ * the crossedUp/crossedDown check on the first live bar after a seed-only
+ * catch-up could never fire even if a real cross happened during the gap.
+ * Any LONG_ENTRY found this way is logged (missed_entry trade event) but
+ * deliberately NEVER traded — a crossover caught minutes late means the
+ * intended entry price is already gone (user's explicit call, 2026-08-27):
+ * log-only, don't chase it at a stale/current price with a stop sized for
+ * the original setup.
+ */
 async function seedSymbol(rest: WebullClient, signals: SignalEngine, symbol: string): Promise<void> {
   const bars = await rest.get<HistoricalBar[]>("/openapi/market-data/stock/bars", {
     symbol,
@@ -157,10 +190,34 @@ async function seedSymbol(rest: WebullClient, signals: SignalEngine, symbol: str
     timespan: "M1",
     count: "30",
   });
-  // CONFIRMED: response is most-recent-first — reverse for oldest-to-newest seeding
-  const closesOldestFirst = bars.map((b) => parseFloat(b.close)).reverse();
-  signals.seed(symbol, closesOldestFirst);
-  console.log(`  ${symbol}: seeded with ${closesOldestFirst.length} historical closes`);
+  // CONFIRMED: response is most-recent-first — reverse for oldest-to-newest replay.
+  const oldestFirst = [...bars].reverse();
+  const preOpen = oldestFirst.filter((b) => !isAtOrAfterMarketOpen(new Date(b.time)));
+  const sessionBars = oldestFirst.filter((b) => isAtOrAfterMarketOpen(new Date(b.time)));
+
+  signals.seed(symbol, preOpen.map((b) => parseFloat(b.close)));
+
+  for (const b of sessionBars) {
+    const bar: RawBar = {
+      time: new Date(b.time).getTime(),
+      open: parseFloat(b.open),
+      high: parseFloat(b.high),
+      low: parseFloat(b.low),
+      close: parseFloat(b.close),
+      volume: parseFloat(b.volume),
+    };
+    const signal = signals.onBarClose(symbol, bar, (msg) => console.log(`  ${msg}`));
+    if (signal === "LONG_ENTRY") {
+      console.log(
+        `  [missed-entry] ${symbol} crossed up at ${b.time} (close ${bar.close}) during catch-up replay — NOT traded, price is stale`
+      );
+      logTradeEvent({ event: "missed_entry", symbol, barTime: b.time, price: bar.close, volume: bar.volume || null });
+    }
+  }
+
+  console.log(
+    `  ${symbol}: seeded ${preOpen.length} pre-open close(s), replayed ${sessionBars.length} session bar(s) for missed-entry detection`
+  );
 }
 
 async function main() {
