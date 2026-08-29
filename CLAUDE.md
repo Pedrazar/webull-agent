@@ -273,6 +273,50 @@ waking up on schedule, with the same reliability caveats as before.
   cron service calling the GitHub API's workflow-dispatch endpoint)
   instead of relying on GitHub's own `schedule` event at all.
 
+- **Three-slot fix insufficient, whole day missed again, 2026-08-28
+  (Friday)** — the exact "more systemic" scenario flagged above happened:
+  ALL THREE redundant `schedule` slots fired late together (23:01, 23:12,
+  23:33 UTC — confirmed via `gh run view --log`, each showing
+  `[startup] already past today's 3:30 PM ET close`), not just one. This
+  proves GitHub was deprioritizing this repo's scheduled workflows overall,
+  not just congestion at a specific minute — spreading triggers across the
+  hour doesn't fix a problem that affects the whole hour. Separately
+  confirmed `workflow_dispatch` (manual/API-triggered runs) is NOT subject
+  to this delay: a `gh workflow run agent.yml` at `2026-08-29T02:02:36Z`
+  started within ~4 seconds. **Fixed** by adding an external trigger
+  independent of GitHub's `schedule` event entirely: a GitHub fine-grained
+  Personal Access Token (scoped to just this repo, `Actions: Read and
+  write` permission — `Metadata: Read-only` is also mandatory and auto-
+  required by GitHub) plus the free **cron-job.org** service configured to
+  `POST` directly to
+  `https://api.github.com/repos/Pedrazar/webull-agent/actions/workflows/agent.yml/dispatches`
+  with headers `Authorization: Bearer <token>`, `Accept:
+  application/vnd.github+json`, `X-GitHub-Api-Version: 2022-11-28`, and
+  body `{"ref":"main"}`. Job schedule: Custom cron `15 6 * * 1-5`
+  evaluated in the job's own `America/Los_Angeles` timezone — deliberately
+  NOT converted to UTC/ET, exploiting the fact that US Eastern is always
+  exactly 3 hours ahead of Pacific year-round (both observe DST on the
+  same date), so 6:15am PT = 9:15am ET every weekday regardless of season
+  with zero DST-conversion logic needed. A successful dispatch returns
+  `204 No Content`; verified end-to-end live (test run showed up in `gh run
+  list` as a real `workflow_dispatch` event, completed successfully).
+  The three in-repo `schedule` cron slots in `agent.yml` were deliberately
+  **left in place** as a harmless backup — the existing `concurrency:
+  cancel-in-progress: false` block means a redundant/late `schedule` fire
+  just queues and no-ops via `exitIfPastClose()` if cron-job.org's
+  `workflow_dispatch` already ran the session for the day. cron-job.org is
+  now the **primary** trigger; GitHub's own `schedule` event is known-
+  unreliable for this repo and should not be trusted alone.
+  - A Claude Code cloud-agent "scheduled routine" (`RemoteTrigger`/the
+    `schedule` skill) was tried first, to avoid needing a third-party
+    service or handing out a GitHub credential externally. Abandoned: it
+    requires connecting a GitHub account to claude.ai's cloud-agent
+    feature specifically, and the Claude GitHub App was only installed on
+    an unrelated organization account (`tripleten-externships`), never on
+    the personal `Pedrazar` account this private repo lives under — no
+    accessible UI path was found to add it there. If this becomes possible
+    later, it would remove the need for the PAT/cron-job.org combo.
+
 ## EOD close: known-fixed bug + a real remaining gap
 
 First live (paper) day, 2026-08-19: the scheduled 3:55pm ET `closeAllEndOfDay()` failed for both open positions (PSNL, MRVI). Root cause, now fixed in `orderManager.ts` (`closeOneEndOfDay` + per-position try/catch in `closeAllEndOfDay`):

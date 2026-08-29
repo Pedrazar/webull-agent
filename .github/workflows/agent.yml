@@ -19,6 +19,17 @@ name: Trading agent
 # main.ts's own waitForMarketOpen() (DST-safe, reads real America/New_York
 # time) is what actually aligns the start to 9:30am ET regardless of
 # season -- see CLAUDE.md's Remote hosting section.
+#
+# CONFIRMED live 2026-08-28: the three-slot fix above was NOT enough --
+# all three schedule slots fired ~9-9.5 hours late together, proving
+# GitHub was deprioritizing this repo's scheduled workflows generally, not
+# just congesting one minute. workflow_dispatch is NOT subject to this
+# delay (confirmed: starts within seconds). PRIMARY trigger is now an
+# external cron-job.org job POSTing to this workflow's dispatches endpoint
+# on a schedule -- these schedule: slots stay only as a harmless backup
+# (the concurrency block below makes a redundant/late fire a no-op via
+# exitIfPastClose()). See CLAUDE.md's Remote hosting section for the full
+# cron-job.org setup.
 on:
   schedule:
     - cron: "17 13 * * 1-5"
