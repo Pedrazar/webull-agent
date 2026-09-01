@@ -347,9 +347,32 @@ waking up on schedule, with the same reliability caveats as before.
   change on cron-job.org's own dashboard, not something committable here.
   With both fixes the real requirement drops to ~349 min; `timeout-minutes`
   bumped from 350 to 355 as our own buffer, still comfortably under the
-  360-min hard cap. **Not yet re-verified live** — needs a clean run under
-  the new trigger time to confirm the math actually holds with real
-  checkout/npm-ci/commit overhead, not just the estimate above.
+  360-min hard cap. **Verified live 2026-09-01**: trigger fired at 9:29am
+  ET, session ran the full 5h46m, EOD close fired cleanly at 3:15pm ET
+  with no forced kill.
+
+- **Queued backup `schedule` run slipped past both EOD guards,
+  2026-09-01 (Tuesday)** — same day the timeout fix above was confirmed
+  clean, one of the three redundant `schedule` slots fired late (as
+  usual), queued behind the `concurrency` lock, and started only once the
+  primary session's EOD close had already run — landing at 3:15:35pm ET,
+  a few seconds after the exact `:15` minute mark. That's the one gap
+  neither guard covered: `exitIfPastClose()` only trips past 3:30pm ET,
+  and the EOD-close `setInterval` used an *exact* `minute === 15` match,
+  which this run had already sailed past by the time its first tick fired.
+  It proceeded through reconcile/seed and was about to connect to the live
+  stream — a real crossover during that window could have placed a
+  duplicate entry against a position the primary session had already
+  closed. Caught live and cancelled manually (`gh run cancel`) before it
+  connected; confirmed via `trades.jsonl` that no duplicate entry landed.
+  **Fixed** in `main.ts`: added `isPastEodCloseTime()` (an "at or after
+  3:15pm ET" check, same pattern as `isAtOrAfterMarketOpen()`), used both
+  in the `setInterval` (replacing the exact-minute match) and as a new
+  guard checked once right after seeding — *before* the stream ever
+  connects — so a late-starting process closes out and exits immediately
+  without ever going live, instead of racing the clock through a live
+  tick window. Not yet re-verified live (no queued run has landed in this
+  window since the fix shipped).
 
 ## EOD close: known-fixed bug + a real remaining gap
 

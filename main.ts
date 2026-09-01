@@ -123,6 +123,23 @@ function isAtOrAfterMarketOpen(date: Date): boolean {
 }
 
 /**
+ * True at or after the 3:15pm ET EOD-close target — "at or after", not an
+ * exact-minute match, so a process that starts mid-window (e.g. a backup
+ * `schedule` trigger that queued behind the concurrency lock and only got
+ * to start at 3:16pm) still catches it instead of sailing past both this
+ * and exitIfPastClose()'s later 3:30pm threshold. See the 2026-09-01
+ * incident in CLAUDE.md's Remote hosting section: an exact `minute === 15`
+ * check missed a queued run that started after :15 had already ticked by,
+ * which went on to connect to the live stream and could have placed a
+ * duplicate entry against a position the primary session had already
+ * closed.
+ */
+function isPastEodCloseTime(date: Date): boolean {
+  const { hour, minute } = nyTimeOf(date);
+  return hour > 15 || (hour === 15 && minute >= 15);
+}
+
+/**
  * Bounded-job mode (GitHub Actions, added 2026-08-25): the cron trigger
  * fires at a single fixed UTC time safely before market open in both EDT
  * and EST (see CLAUDE.md's Remote hosting section) rather than trying two
@@ -289,6 +306,23 @@ async function main() {
     await seedSymbol(rest, signals, symbol);
   }
 
+  // Catch a start that lands in the narrow window between the EOD-close
+  // target (3:15pm ET) and exitIfPastClose()'s later 3:30pm threshold —
+  // e.g. a backup `schedule` trigger queued behind the concurrency lock
+  // that only gets to start once the primary session's already done for
+  // the day. Checked here, before ever connecting to the live stream, so
+  // there's no window where a live crossover could place a duplicate
+  // entry against a position the primary session already closed out.
+  if (isPastEodCloseTime(new Date())) {
+    console.log(
+      "[eod] already past the 3:15 PM ET close by the time startup finished — closing out and exiting without going live"
+    );
+    await risk.closeAllEndOfDay();
+    await risk.checkForFills();
+    console.log("[eod] trading day complete, shutting down");
+    process.exit(0);
+  }
+
   // Latest bid/ask per symbol, from the QUOTE stream — used only to gate
   // entries on spread, not for bar construction (TICK/trade price still
   // drives the bars and the signal, unchanged).
@@ -357,8 +391,6 @@ async function main() {
   // so it still fires during a low-volume lull near the close. Reuses the
   // shared DST-safe nyNow() defined above.
   setInterval(() => {
-    const { hour, minute } = nyNow();
-
     // Moved up 30 min from the original 3:55pm ET (2026-08-25, deliberate
     // choice: the last half hour of the session isn't worth trading), then
     // another 10 min from 3:25pm to 3:15pm ET (2026-08-31) — GitHub's
@@ -370,7 +402,7 @@ async function main() {
     // have run — harmless that day only because no position was open at
     // the time). See CLAUDE.md's Remote hosting section for the full
     // incident and margin math.
-    if (hour === 15 && minute === 15) {
+    if (isPastEodCloseTime(new Date())) {
       console.log("[eod] 3:15 PM ET reached, closing all positions");
       (async () => {
         try {
