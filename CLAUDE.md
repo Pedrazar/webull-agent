@@ -317,6 +317,40 @@ waking up on schedule, with the same reliability caveats as before.
     accessible UI path was found to add it there. If this becomes possible
     later, it would remove the need for the PAT/cron-job.org combo.
 
+- **First on-time full session exposed a 360-min hard-cap timeout bug,
+  2026-08-31 (Monday)** — cron-job.org's 9:15am ET trigger worked exactly
+  as designed (job started within seconds), which meant, for the first
+  time, a session actually ran continuously from before market open all
+  the way toward the scripted close instead of getting cut short early by
+  a late `schedule` trigger. That exposed a math error baked into the
+  original `timeout-minutes: 350` setting: it was sized against "the
+  session is 9:30am-3:30pm ET = 6 hours" but never accounted for the
+  pre-open wait time. 9:15am ET start + 15 min wait for 9:30am open + the
+  9:30am-3:25pm ET session (355 min) + checkout/npm-ci/commit overhead
+  totaled ~370 min — past even GitHub's hard 360-min hosted-runner cap,
+  let alone the 350-min timeout. GitHub force-killed the job at 3:05pm ET,
+  **20 minutes before its own EOD close ever ran** (confirmed via `gh run
+  view --json jobs`: the `Run trading agent` step shows
+  `"conclusion":"cancelled"`, `updated_at` exactly 350 min after
+  `run_started_at`). Harmless that day only because the one open position
+  (MSTZ) had already hit its hard stop and closed at 14:41 UTC, hours
+  before the kill — on a day with a position still open at 3:05pm ET, this
+  would have abandoned it mid-session with no scripted flatten, left
+  riding only its resting broker-side stop order overnight instead of the
+  deliberate EOD close. The `if: always()` commit-back step still ran and
+  captured `trades.jsonl` correctly even under a GitHub-forced kill, so no
+  data was lost — only the EOD-close logic itself never got to run.
+  **Fixed** two ways: (1) EOD close moved from 3:25pm to 3:15pm ET in
+  `main.ts`, trimming the session to 345 min; (2) the cron-job.org trigger
+  needs to move from 6:15am PT (9:15am ET) to **6:29am PT (9:29am ET)**,
+  cutting the pre-open wait from 15 min to ~1 min — this is a config
+  change on cron-job.org's own dashboard, not something committable here.
+  With both fixes the real requirement drops to ~349 min; `timeout-minutes`
+  bumped from 350 to 355 as our own buffer, still comfortably under the
+  360-min hard cap. **Not yet re-verified live** — needs a clean run under
+  the new trigger time to confirm the math actually holds with real
+  checkout/npm-ci/commit overhead, not just the estimate above.
+
 ## EOD close: known-fixed bug + a real remaining gap
 
 First live (paper) day, 2026-08-19: the scheduled 3:55pm ET `closeAllEndOfDay()` failed for both open positions (PSNL, MRVI). Root cause, now fixed in `orderManager.ts` (`closeOneEndOfDay` + per-position try/catch in `closeAllEndOfDay`):

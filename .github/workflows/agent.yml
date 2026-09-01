@@ -47,10 +47,18 @@ permissions:
 jobs:
   agent:
     runs-on: ubuntu-latest
-    # Regular session is 9:30am-3:30pm ET (6 hours) since the EOD close
-    # moved up 30 min on 2026-08-25 — this margin covers the pre-open wait
-    # plus a safety buffer under the 360-minute hosted-runner hard cap.
-    timeout-minutes: 350
+    # CONFIRMED live 2026-08-31: the original "350 min fits under the 360
+    # hard cap" math was wrong — it didn't account for the pre-open wait.
+    # A 9:15am ET trigger + 9:30am-3:25pm ET session + checkout/npm-ci/
+    # commit overhead added up to ~370 min, so GitHub force-killed the job
+    # at the 350-min timeout, 20 min before its own EOD close ever ran (see
+    # CLAUDE.md's Remote hosting section). Fixed with two changes: the EOD
+    # close moved from 3:25pm to 3:15pm ET (main.ts), shaving 10 min off
+    # the session, and the external cron-job.org trigger should fire right
+    # at 9:29am ET (not 9:15am) to cut the pre-open wait to ~1 min instead
+    # of 15. With both fixes the real requirement is ~349 min; this is set
+    # a bit above that as our own buffer, still comfortably under 360.
+    timeout-minutes: 355
     steps:
       - uses: actions/checkout@v4
 

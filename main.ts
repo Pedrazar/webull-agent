@@ -360,10 +360,18 @@ async function main() {
     const { hour, minute } = nyNow();
 
     // Moved up 30 min from the original 3:55pm ET (2026-08-25, deliberate
-    // choice: the last half hour of the session isn't worth trading) — so
-    // this now targets 3:25pm ET, 5 min ahead of a 3:30pm ET effective close.
-    if (hour === 15 && minute === 25) {
-      console.log("[eod] 3:25 PM ET reached, closing all positions");
+    // choice: the last half hour of the session isn't worth trading), then
+    // another 10 min from 3:25pm to 3:15pm ET (2026-08-31) — GitHub's
+    // hosted-runner hard cap is 360 min total per job, and a 9:15am ET
+    // cron-job.org trigger plus a 9:30am-3:25pm ET session plus checkout/
+    // npm-ci/commit overhead added up to ~370 min, so the job got hard-
+    // killed by GitHub before ever reaching its own EOD close (confirmed
+    // live 2026-08-31: killed at 3:05pm ET, 20 min before the close would
+    // have run — harmless that day only because no position was open at
+    // the time). See CLAUDE.md's Remote hosting section for the full
+    // incident and margin math.
+    if (hour === 15 && minute === 15) {
+      console.log("[eod] 3:15 PM ET reached, closing all positions");
       (async () => {
         try {
           await risk.closeAllEndOfDay();
