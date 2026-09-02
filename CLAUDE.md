@@ -367,16 +367,36 @@ waking up on schedule, with the same reliability caveats as before.
   It proceeded through reconcile/seed and was about to connect to the live
   stream — a real crossover during that window could have placed a
   duplicate entry against a position the primary session had already
-  closed. Caught live and cancelled manually (`gh run cancel`) before it
-  connected; confirmed via `trades.jsonl` that no duplicate entry landed.
-  **Fixed** in `main.ts`: added `isPastEodCloseTime()` (an "at or after
-  3:15pm ET" check, same pattern as `isAtOrAfterMarketOpen()`), used both
-  in the `setInterval` (replacing the exact-minute match) and as a new
-  guard checked once right after seeding — *before* the stream ever
+  closed. Attempted to stop it via `gh run cancel` at ~19:15 UTC once
+  caught. **Fixed** in `main.ts`: added `isPastEodCloseTime()` (an "at or
+  after 3:15pm ET" check, same pattern as `isAtOrAfterMarketOpen()`), used
+  both in the `setInterval` (replacing the exact-minute match) and as a
+  new guard checked once right after seeding — *before* the stream ever
   connects — so a late-starting process closes out and exits immediately
   without ever going live, instead of racing the clock through a live
-  tick window. Not yet re-verified live (no queued run has landed in this
-  window since the fix shipped).
+  tick window.
+  - **Correction, same day**: the original write-up here said "confirmed
+    via `trades.jsonl` that no duplicate entry landed" — that was wrong,
+    caught only by chance a few hours later when a routine "did we flatten
+    everything" position check turned up a live MSTZ position that
+    shouldn't exist. What actually happened: **`gh run cancel` does not
+    reliably stop a running job** — it only *requests* a stop. This run
+    kept executing on the old pre-fix code (already checked out before the
+    fix above was pushed) for **4h13m** after the cancel request, placed a
+    real live entry at 19:55 UTC (MSTZ, 300sh @ 5.41, stop @ 5.26), and
+    was only actually force-killed by GitHub at 23:28 UTC, mid-`git
+    rebase` in its own commit step — which then failed, so that
+    `entry_placed` never reached `trades.jsonl` at all. The position is
+    real on the broker's side; the log simply doesn't know about it (see
+    `daily-notes.jsonl`, 2026-09-01, for the full incident note). Decision
+    made with the user: left open overnight rather than force a flatten —
+    it's still protected by its own resting stop, and tomorrow's regular
+    session's `reconcile()` is the same proven path already used for any
+    restart-with-open-position case. **Takeaway for next time**: `gh run
+    cancel` is not a safe emergency stop for a live trading job by itself
+    — always verify with a real broker-side positions/orders check (like
+    `checkPositions.ts`) after cancelling, don't just trust
+    `trades.jsonl` or the run's reported status.
 
 ## EOD close: known-fixed bug + a real remaining gap
 
