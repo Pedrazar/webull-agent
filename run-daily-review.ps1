@@ -39,7 +39,18 @@ Files to read:
     volume} -- volume is the bar's volume at the moment this entry's
     signal fired, or null if unavailable.
   - entry_rejected: {symbol, reason ("price_out_of_range" |
-    "kill_switch_active"), price}
+    "kill_switch_active" | "already_in_position" | "spread_too_wide" |
+    "quote_unavailable" | "symbol_on_cooldown"), price, cooldownReason}
+    -- "symbol_on_cooldown" (added 2026-09-01) means the symbol just lost
+    AGENT_COOLDOWN_STREAK times in a row (default 3) and is being skipped
+    for AGENT_COOLDOWN_DAYS calendar days (default 2) from the last of
+    those losses -- see cooldown.ts. cooldownReason is only present on
+    this reason and already spells out the streak (e.g. "3 consecutive
+    losses: -$45.00, -$30.00, -$15.00 (last ...)"). Always call these out
+    explicitly in their own "Active cooldowns" section (only if any exist
+    for today), same treatment as missed_entry below -- this is the one
+    place the agent adapts to its own losses, so it's worth surfacing
+    plainly.
   - breakeven_move: {symbol, newStopPrice}
   - trailing_start: {symbol, trailingStopStep}
   - exit_filled: {symbol, exitReason ("HARD_STOP"|"BREAKEVEN"|"TRAILING"|
@@ -103,7 +114,10 @@ Task:
 5. Format your reply as the full markdown report: a one-paragraph summary
    at the top, a metrics table, then "What worked", "What didn't", a
    "Missed entries" section (only if any missed_entry events exist for
-   today -- omit entirely otherwise), a "Manual notes" section (only if
+   today -- omit entirely otherwise), an "Active cooldowns" section (only
+   if any symbol_on_cooldown rejections exist for today -- omit entirely
+   otherwise; name the symbol and quote its cooldownReason field, which
+   already has the losing streak spelled out), a "Manual notes" section (only if
    daily-notes.jsonl has entries for today -- omit the section entirely
    otherwise), and "Suggested directions to consider". Output ONLY the
    report -- no preamble like "Here's my analysis," no closing remarks

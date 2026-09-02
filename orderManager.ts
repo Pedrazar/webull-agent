@@ -73,6 +73,7 @@ function sleep(ms: number): Promise<void> {
 import { WebullClient } from "./webullClient";
 import crypto from "crypto";
 import { logTradeEvent } from "./tradeLogger";
+import { CooldownInfo } from "./cooldown";
 
 export interface RiskConfig {
   accountId: string;
@@ -142,6 +143,7 @@ export class OrderManager {
   private dailyPnl = 0;
   private killSwitchTripped = false;
   private volumeSource: Map<string, number> | null = null;
+  private cooldownSymbols = new Map<string, CooldownInfo>();
 
   constructor(private client: WebullClient, private config: RiskConfig) {}
 
@@ -156,6 +158,17 @@ export class OrderManager {
    */
   setVolumeSource(volumeSource: Map<string, number>): void {
     this.volumeSource = volumeSource;
+  }
+
+  /**
+   * Symbols computed at startup (see cooldown.ts) as having just lost N
+   * times in a row — new entries on them are refused until the cooldown
+   * expires. Added 2026-09-01: the one piece of the agent that adapts
+   * based on trade outcomes, deliberately scoped to counting a losing
+   * streak rather than inferring correlations from a small sample.
+   */
+  setCooldownSymbols(cooldownSymbols: Map<string, CooldownInfo>): void {
+    this.cooldownSymbols = cooldownSymbols;
   }
 
   private latestVolume(symbol: string): number | null {
@@ -370,6 +383,13 @@ export class OrderManager {
       return;
     }
     if (this.positions.has(symbol)) return; // already in a position, not logged as a rejection — this is routine, not a decision
+
+    const cooldown = this.cooldownSymbols.get(symbol);
+    if (cooldown) {
+      console.warn(`[risk] ${symbol} on cooldown until ${new Date(cooldown.until).toISOString()}: ${cooldown.reason}`);
+      logTradeEvent({ event: "entry_rejected", symbol, reason: "symbol_on_cooldown", price, cooldownReason: cooldown.reason });
+      return;
+    }
 
     if (price < this.config.minPrice || price > this.config.maxPrice) {
       console.log(

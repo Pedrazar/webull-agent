@@ -26,6 +26,7 @@ import { SignalEngine } from "./signalEngine";
 import { OrderManager } from "./orderManager";
 import { runScreener } from "./stockScreener";
 import { logTradeEvent } from "./tradeLogger";
+import { computeCooldownSymbols, LoggedTradeEvent } from "./cooldown";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -76,6 +77,11 @@ async function loadOrRunScreener(rest: WebullClient): Promise<string[]> {
 // just the first N entries.
 const ACTIVE_SYMBOL_COUNT = Number(process.env.AGENT_ACTIVE_SYMBOL_COUNT ?? 2);
 const WATCHLIST_RECHECK_MS = 60 * 60_000; // re-rank top N hourly
+
+// Per-symbol cooldown after a losing streak — see cooldown.ts. Calendar
+// days, not trading days (a documented simplification).
+const COOLDOWN_STREAK = Number(process.env.AGENT_COOLDOWN_STREAK ?? 3);
+const COOLDOWN_DAYS = Number(process.env.AGENT_COOLDOWN_DAYS ?? 2);
 
 // Always entry-eligible regardless of watchlist ranking — on top of, not
 // instead of, the top-N watchlist symbols below. Added 2026-08-22.
@@ -280,6 +286,26 @@ async function main() {
     maxSpread: 0.03,
     maxDailyLossUsd: 120,
   });
+
+  // Cooldown symbols that just lost COOLDOWN_STREAK times in a row —
+  // computed fresh from trades.jsonl every startup, before reconcile() so
+  // it's active before any entry could possibly fire. See cooldown.ts.
+  const tradesLogPath = path.join(__dirname, "trades.jsonl");
+  const loggedTrades: LoggedTradeEvent[] = fs.existsSync(tradesLogPath)
+    ? fs
+        .readFileSync(tradesLogPath, "utf-8")
+        .split("\n")
+        .filter((line) => line.trim().length > 0)
+        .map((line) => JSON.parse(line) as LoggedTradeEvent)
+    : [];
+  const cooldownSymbols = computeCooldownSymbols(loggedTrades, new Date(), {
+    streak: COOLDOWN_STREAK,
+    days: COOLDOWN_DAYS,
+  });
+  risk.setCooldownSymbols(cooldownSymbols);
+  for (const [symbol, info] of cooldownSymbols) {
+    console.log(`[cooldown] ${symbol} on cooldown until ${new Date(info.until).toISOString()}: ${info.reason}`);
+  }
 
   // Reconcile against real broker state BEFORE doing anything else — a
   // restart should never think it's flat when it's actually holding shares.

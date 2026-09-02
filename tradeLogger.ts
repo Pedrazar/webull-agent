@@ -32,9 +32,11 @@ export type TradeEvent =
         | "kill_switch_active"
         | "already_in_position"
         | "spread_too_wide"
-        | "quote_unavailable";
+        | "quote_unavailable"
+        | "symbol_on_cooldown";
       price: number;
       spread?: number | null;
+      cooldownReason?: string; // only set for reason: "symbol_on_cooldown" — see cooldown.ts
     }
   | {
       event: "breakeven_move";
