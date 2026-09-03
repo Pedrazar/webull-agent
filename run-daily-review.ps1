@@ -45,8 +45,9 @@ Files to read:
     AGENT_COOLDOWN_STREAK times in a row (default 3) and is being skipped
     for AGENT_COOLDOWN_DAYS calendar days (default 2) from the last of
     those losses -- see cooldown.ts. cooldownReason is only present on
-    this reason and already spells out the streak (e.g. "3 consecutive
-    losses: -$45.00, -$30.00, -$15.00 (last ...)"). Always call these out
+    this reason and already spells out the streak (e.g. a note like
+    "3 consecutive losses" followed by each loss amount and a last-loss
+    timestamp). Always call these out
     explicitly in their own "Active cooldowns" section (only if any exist
     for today), same treatment as missed_entry below -- this is the one
     place the agent adapts to its own losses, so it's worth surfacing
