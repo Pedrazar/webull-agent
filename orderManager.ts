@@ -88,6 +88,7 @@ export interface RiskConfig {
   minPrice: number; // only enter if price >= this (e.g. 1)
   maxPrice: number; // only enter if price <= this (e.g. 20)
   maxSpread: number; // only enter if (ask - bid) < this, e.g. 0.03 — a wide spread on a low-priced stock eats the edge instantly on entry+exit
+  minEntryVolume: number; // only enter if the triggering bar's volume >= this — filters thin/low-participation signal bars
   maxDailyLossUsd: number; // kill switch
   // (EOD timing itself is now handled in main.ts via Intl/America-New_York,
   // not here — these fields are unused, kept only to avoid a breaking
@@ -411,6 +412,21 @@ export class OrderManager {
         `[risk] ${symbol} @ ${price} spread ${spread.toFixed(2)} >= max ${this.config.maxSpread}, skipping entry`
       );
       logTradeEvent({ event: "entry_rejected", symbol, reason: "spread_too_wide", price, spread });
+      return;
+    }
+
+    // Signal-bar volume floor — added 2026-09-03 after a real SID entry
+    // fired on a 100-share signal bar (two to three orders of magnitude
+    // thinner than every other entry that day), a low-participation/
+    // possibly-stale-tick situation the daily review flagged as exactly
+    // what this field exists to catch. Fails closed like the spread check
+    // above: missing volume blocks the entry rather than allowing it.
+    const volume = this.latestVolume(symbol);
+    if (volume === null || volume < this.config.minEntryVolume) {
+      console.log(
+        `[risk] ${symbol} @ ${price} signal-bar volume ${volume ?? "unavailable"} < min ${this.config.minEntryVolume}, skipping entry`
+      );
+      logTradeEvent({ event: "entry_rejected", symbol, reason: "volume_too_low", price, volume });
       return;
     }
 

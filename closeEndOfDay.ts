@@ -30,6 +30,7 @@ async function main() {
     minPrice: 1,
     maxPrice: 20,
     maxSpread: 0.03,
+    minEntryVolume: 5_000,
     maxDailyLossUsd: 120,
   });
 

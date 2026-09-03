@@ -40,16 +40,22 @@ Files to read:
     signal fired, or null if unavailable.
   - entry_rejected: {symbol, reason ("price_out_of_range" |
     "kill_switch_active" | "already_in_position" | "spread_too_wide" |
-    "quote_unavailable" | "symbol_on_cooldown"), price, cooldownReason}
+    "quote_unavailable" | "symbol_on_cooldown" | "volume_too_low"), price,
+    cooldownReason, volume}
     -- "symbol_on_cooldown" (added 2026-09-01) means the symbol just lost
     AGENT_COOLDOWN_STREAK times in a row (default 3) and is being skipped
     for AGENT_COOLDOWN_DAYS calendar days (default 2) from the last of
     those losses -- see cooldown.ts. cooldownReason is only present on
     this reason and already spells out the streak (e.g. a note like
     "3 consecutive losses" followed by each loss amount and a last-loss
-    timestamp). Always call these out
-    explicitly in their own "Active cooldowns" section (only if any exist
-    for today), same treatment as missed_entry below -- this is the one
+    timestamp). "volume_too_low" (added 2026-09-03, after a real SID entry
+    fired on a 100-share signal bar) means the triggering bar's volume was
+    below AGENT_MIN_ENTRY_VOLUME (default 5,000) -- the volume field on
+    this reason carries the actual (too-low) value. Always call both
+    explicitly in their own sections ("Active cooldowns", "Volume-gate
+    rejections" -- only if any exist for today), same treatment as
+    missed_entry below -- these are the two places the agent adapts on its
+    own rather than waiting for a human to change a hardcoded parameter
     place the agent adapts to its own losses, so it's worth surfacing
     plainly.
   - breakeven_move: {symbol, newStopPrice}
@@ -118,7 +124,10 @@ Task:
    today -- omit entirely otherwise), an "Active cooldowns" section (only
    if any symbol_on_cooldown rejections exist for today -- omit entirely
    otherwise; name the symbol and quote its cooldownReason field, which
-   already has the losing streak spelled out), a "Manual notes" section (only if
+   already has the losing streak spelled out), a "Volume-gate rejections"
+   section (only if any volume_too_low rejections exist for today -- omit
+   entirely otherwise; name the symbol and its volume field value against
+   the AGENT_MIN_ENTRY_VOLUME threshold), a "Manual notes" section (only if
    daily-notes.jsonl has entries for today -- omit the section entirely
    otherwise), and "Suggested directions to consider". Output ONLY the
    report -- no preamble like "Here's my analysis," no closing remarks

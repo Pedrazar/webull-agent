@@ -83,6 +83,12 @@ const WATCHLIST_RECHECK_MS = 60 * 60_000; // re-rank top N hourly
 const COOLDOWN_STREAK = Number(process.env.AGENT_COOLDOWN_STREAK ?? 3);
 const COOLDOWN_DAYS = Number(process.env.AGENT_COOLDOWN_DAYS ?? 2);
 
+// Minimum signal-bar volume to allow an entry — added 2026-09-03 after a
+// real SID entry fired on a 100-share bar. Default is well below every
+// legitimate entry seen so far (lowest on record: ~18,000) and well above
+// that 100-share anomaly.
+const MIN_ENTRY_VOLUME = Number(process.env.AGENT_MIN_ENTRY_VOLUME ?? 5_000);
+
 // Always entry-eligible regardless of watchlist ranking — on top of, not
 // instead of, the top-N watchlist symbols below. Added 2026-08-22.
 const ALWAYS_ACTIVE_SYMBOLS = (process.env.AGENT_ALWAYS_ACTIVE_SYMBOLS ?? "MSTZ,NVTS")
@@ -284,6 +290,7 @@ async function main() {
     minPrice: 1,
     maxPrice: 20,
     maxSpread: 0.03,
+    minEntryVolume: MIN_ENTRY_VOLUME,
     maxDailyLossUsd: 120,
   });
 
