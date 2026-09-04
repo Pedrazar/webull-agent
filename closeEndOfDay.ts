@@ -31,7 +31,7 @@ async function main() {
     maxPrice: 20,
     maxSpread: 0.03,
     minEntryVolume: 5_000,
-    maxDailyLossUsd: 120,
+    maxDailyLossUsd: 150,
   });
 
   console.log("Reconciling positions from broker...");

@@ -75,7 +75,7 @@ async function loadOrRunScreener(rest: WebullClient): Promise<string[]> {
 // symbols are allowed to open NEW positions. watchlist.json is already
 // ranked by relative_volume_10d desc (see stockScreener.ts), so "top N" is
 // just the first N entries.
-const ACTIVE_SYMBOL_COUNT = Number(process.env.AGENT_ACTIVE_SYMBOL_COUNT ?? 2);
+const ACTIVE_SYMBOL_COUNT = Number(process.env.AGENT_ACTIVE_SYMBOL_COUNT ?? 4);
 const WATCHLIST_RECHECK_MS = 60 * 60_000; // re-rank top N hourly
 
 // Per-symbol cooldown after a losing streak — see cooldown.ts. Calendar
@@ -291,7 +291,7 @@ async function main() {
     maxPrice: 20,
     maxSpread: 0.03,
     minEntryVolume: MIN_ENTRY_VOLUME,
-    maxDailyLossUsd: 120,
+    maxDailyLossUsd: 150,
   });
 
   // Cooldown symbols that just lost COOLDOWN_STREAK times in a row —
