@@ -429,15 +429,28 @@ waking up on schedule, with the same reliability caveats as before.
     Easter; several others shift when the nominal date lands on a
     weekend) — falling behind on this is silent and only wastes minutes
     again, it doesn't crash or misbehave otherwise.
-  - **Not yet resolved**: whether the account has a $0 Actions budget set
-    (which would silently block all future runs once the free minutes run
-    out, not bill for them) or no budget (which bills ~$0.008/min beyond
-    2,000/month, roughly $40+/month at this usage rate) is something only
-    checkable/decidable in GitHub's own billing settings — left as an open
-    decision for the user rather than something to guess at or change
-    unilaterally. The deeper structural question (accept the recurring
-    charge vs. move the trading job off GitHub-hosted Actions runners
-    entirely) is also still open.
+  - **Resolved, same day**: the user chose not to pay for Actions minutes
+    at all. **The repo was made public** (`gh repo edit ... --visibility
+    public`) — GitHub Actions minutes are free and unlimited on public
+    repositories; the 2,000/month cap only ever applied because this repo
+    was private. This was verified safe first, not assumed: `git log --all
+    --full-history` confirmed `.env` and `prod-token.json` were never
+    committed at any point in history, a full-history content grep for
+    hardcoded key/secret-shaped literals came back empty, and `gh secret
+    list` confirmed all 4 credentials (`WEBULL_APP_KEY`,
+    `WEBULL_APP_SECRET`, `WEBULL_BASE_URL`, `WEBULL_SANDBOX_ACCOUNT_ID`)
+    live only as GitHub Secrets, never in the repo itself — those stay
+    inaccessible regardless of visibility. Trade-off accepted knowingly:
+    source code, strategy parameters, and trade history
+    (`trades.jsonl`/`daily-reviews/`/`watchlist.json`) are now publicly
+    visible on GitHub. Two other options were considered and declined: a
+    self-hosted Actions runner on a free-tier cloud VM (keeps the repo
+    private, avoids the minute cap, but needs a new always-on machine to
+    provision and maintain) and reverting to local Task Scheduler wake/lid
+    -prevention at 9:29am ET (free, no new setup, but reintroduces the
+    exact Modern Standby wake-reliability problem that already cost two
+    real trading days before this repo ever moved to GitHub Actions — a
+    later trigger time doesn't fix that underlying hardware issue).
 
 ## EOD close: known-fixed bug + a real remaining gap
 
