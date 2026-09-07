@@ -402,6 +402,43 @@ waking up on schedule, with the same reliability caveats as before.
     `checkPositions.ts`) after cancelling, don't just trust
     `trades.jsonl` or the run's reported status.
 
+- **No market-holiday awareness → a wasted ~5-hour session on Labor Day,
+  plus a real GitHub Actions billing scare, 2026-09-07 (Monday)** — the
+  cron-job.org trigger and the in-repo `schedule` backup slots both fired
+  normally (they only know "weekday", not "market holiday"), and
+  `main.ts` had no concept of holidays either — `waitForMarketOpen()` and
+  `exitIfPastClose()` only ever checked the clock, so the process waited
+  for 9:30am ET like any other day and then sat connected to the live
+  stream for hours with nothing to trade, on a day the exchange was
+  actually closed. Caught because it coincided with a GitHub email:
+  **1,995 of 2,000 free monthly Actions minutes used (99.75%)**, 27 days
+  before the monthly reset. Pulled actual run durations to quantify: a
+  normal trading day burns **~346 minutes** for the primary session alone
+  — at ~21 trading days/month that's **~7,300 minutes/month against a
+  2,000/month free allowance**, before counting waste from the redundant
+  backup `schedule` slots. This repo's usage pattern was always going to
+  exceed the free tier well before a month was out; the holiday waste just
+  made it visible sooner. Two separate concerns, only one fixed so far:
+  - **Fixed**: `main.ts` now hardcodes the NYSE/NASDAQ full-closure
+    calendar (`NYSE_HOLIDAYS`, 2026-2027) and exits immediately at startup
+    if today (America/New_York calendar date) is in it — before the
+    screener runs, before waiting for open, before connecting to
+    anything. Does **not** cover early-close half-days (e.g. the Friday
+    after Thanksgiving) — a known, smaller residual gap. The holiday list
+    needs a manual annual top-up (Good Friday is a movable date tied to
+    Easter; several others shift when the nominal date lands on a
+    weekend) — falling behind on this is silent and only wastes minutes
+    again, it doesn't crash or misbehave otherwise.
+  - **Not yet resolved**: whether the account has a $0 Actions budget set
+    (which would silently block all future runs once the free minutes run
+    out, not bill for them) or no budget (which bills ~$0.008/min beyond
+    2,000/month, roughly $40+/month at this usage rate) is something only
+    checkable/decidable in GitHub's own billing settings — left as an open
+    decision for the user rather than something to guess at or change
+    unilaterally. The deeper structural question (accept the recurring
+    charge vs. move the trading job off GitHub-hosted Actions runners
+    entirely) is also still open.
+
 ## EOD close: known-fixed bug + a real remaining gap
 
 First live (paper) day, 2026-08-19: the scheduled 3:55pm ET `closeAllEndOfDay()` failed for both open positions (PSNL, MRVI). Root cause, now fixed in `orderManager.ts` (`closeOneEndOfDay` + per-position try/catch in `closeAllEndOfDay`):

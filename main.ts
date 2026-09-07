@@ -128,6 +128,38 @@ function nyNow(): { hour: number; minute: number } {
   return nyTimeOf(new Date());
 }
 
+// NYSE/NASDAQ full-market-closure dates (America/New_York calendar date),
+// hardcoded rather than computed — added 2026-09-07 after the agent burned
+// a full ~5-hour GitHub Actions session on Labor Day (a market holiday)
+// because exitIfPastClose()/waitForMarketOpen() only ever checked the
+// clock, never whether the exchange was actually open that day. This list
+// covers 2026-2027; it needs a manual annual top-up (Good Friday/Easter is
+// a movable date, and several others shift when the nominal date falls on
+// a weekend) — a stale/missing year here just means holiday-awareness
+// silently stops working for that year, not a crash, so it's safe to fall
+// behind, just wasteful (exactly the cost this was added to avoid). Does
+// NOT cover early-close half-days (e.g. the day after Thanksgiving) — a
+// known, smaller residual gap.
+const NYSE_HOLIDAYS = new Set([
+  // 2026
+  "2026-01-01", "2026-01-19", "2026-02-16", "2026-04-03", "2026-05-25",
+  "2026-06-19", "2026-07-03", "2026-09-07", "2026-11-26", "2026-12-25",
+  // 2027
+  "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31",
+  "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24",
+]);
+
+const nyDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/New_York",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+}); // en-CA locale formats as YYYY-MM-DD directly, matching NYSE_HOLIDAYS
+
+function isMarketHoliday(date: Date): boolean {
+  return NYSE_HOLIDAYS.has(nyDateFormatter.format(date));
+}
+
 /** True for a bar timestamped at or after today's 9:30am ET regular-hours open. */
 function isAtOrAfterMarketOpen(date: Date): boolean {
   const { hour, minute } = nyTimeOf(date);
@@ -250,6 +282,10 @@ async function seedSymbol(rest: WebullClient, signals: SignalEngine, symbol: str
 }
 
 async function main() {
+  if (isMarketHoliday(new Date())) {
+    console.log(`[startup] ${nyDateFormatter.format(new Date())} is a market holiday — nothing to do, exiting`);
+    process.exit(0);
+  }
   exitIfPastClose();
 
   const baseUrl = process.env.WEBULL_BASE_URL ?? "https://api.sandbox.webull.com";
