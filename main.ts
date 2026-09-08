@@ -167,20 +167,30 @@ function isAtOrAfterMarketOpen(date: Date): boolean {
 }
 
 /**
- * True at or after the 3:15pm ET EOD-close target — "at or after", not an
+ * True at or after the 3:20pm ET EOD-close target — "at or after", not an
  * exact-minute match, so a process that starts mid-window (e.g. a backup
  * `schedule` trigger that queued behind the concurrency lock and only got
- * to start at 3:16pm) still catches it instead of sailing past both this
+ * to start at 3:21pm) still catches it instead of sailing past both this
  * and exitIfPastClose()'s later 3:30pm threshold. See the 2026-09-01
  * incident in CLAUDE.md's Remote hosting section: an exact `minute === 15`
  * check missed a queued run that started after :15 had already ticked by,
  * which went on to connect to the live stream and could have placed a
  * duplicate entry against a position the primary session had already
  * closed.
+ *
+ * Moved from 3:15pm to 3:20pm ET on 2026-09-08 — a deliberate half-measure
+ * (not the full move back to the original 3:25pm) to keep real total job
+ * runtime safely under GitHub's 360-min hosted-runner hard cap: the
+ * 3:15pm close measured ~346 min end-to-end on 2026-09-08, so 3:20pm
+ * projects to ~351 min, still comfortably inside the 355-min
+ * `timeout-minutes` budget and ~9 min under the hard cap. See the
+ * 2026-08-31 incident in CLAUDE.md's Remote hosting section for what
+ * happens when that margin runs out — a forced kill before EOD close
+ * ever runs, abandoning any open position mid-session.
  */
 function isPastEodCloseTime(date: Date): boolean {
   const { hour, minute } = nyTimeOf(date);
-  return hour > 15 || (hour === 15 && minute >= 15);
+  return hour > 15 || (hour === 15 && minute >= 20);
 }
 
 /**
@@ -376,7 +386,7 @@ async function main() {
   }
 
   // Catch a start that lands in the narrow window between the EOD-close
-  // target (3:15pm ET) and exitIfPastClose()'s later 3:30pm threshold —
+  // target (3:20pm ET) and exitIfPastClose()'s later 3:30pm threshold —
   // e.g. a backup `schedule` trigger queued behind the concurrency lock
   // that only gets to start once the primary session's already done for
   // the day. Checked here, before ever connecting to the live stream, so
@@ -384,7 +394,7 @@ async function main() {
   // entry against a position the primary session already closed out.
   if (isPastEodCloseTime(new Date())) {
     console.log(
-      "[eod] already past the 3:15 PM ET close by the time startup finished — closing out and exiting without going live"
+      "[eod] already past the 3:20 PM ET close by the time startup finished — closing out and exiting without going live"
     );
     await risk.closeAllEndOfDay();
     await risk.checkForFills();
@@ -469,10 +479,15 @@ async function main() {
     // killed by GitHub before ever reaching its own EOD close (confirmed
     // live 2026-08-31: killed at 3:05pm ET, 20 min before the close would
     // have run — harmless that day only because no position was open at
-    // the time). See CLAUDE.md's Remote hosting section for the full
-    // incident and margin math.
+    // the time). Moved back out 5 min, to 3:20pm ET, on 2026-09-08 — a
+    // deliberate half-measure once the 9:29am ET trigger + 3:15pm close
+    // was measured at ~346 min real end-to-end, leaving enough margin
+    // (~9 min under the 360-min hard cap) to safely give back some of the
+    // trading window without reopening the 2026-08-31 failure mode. See
+    // CLAUDE.md's Remote hosting section for the full incident and margin
+    // math.
     if (isPastEodCloseTime(new Date())) {
-      console.log("[eod] 3:15 PM ET reached, closing all positions");
+      console.log("[eod] 3:20 PM ET reached, closing all positions");
       (async () => {
         try {
           await risk.closeAllEndOfDay();

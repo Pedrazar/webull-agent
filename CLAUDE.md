@@ -359,6 +359,20 @@ waking up on schedule, with the same reliability caveats as before.
   ET, session ran the full 5h46m, EOD close fired cleanly at 3:15pm ET
   with no forced kill.
 
+- **EOD close moved back out 5 min, to 3:20pm ET, 2026-09-08** — a
+  deliberate partial reversal of the 2026-08-31 trim above, at the user's
+  request (they wanted the original 3:25pm back; 3:20pm was a half-measure
+  after checking the margin). Based on real measured runtime that same
+  day: the primary `workflow_dispatch` session ran 13:29:02–19:15:25 UTC,
+  **346.4 minutes end-to-end**, against `timeout-minutes: 355` and
+  GitHub's 360-min hard cap. A full move back to 3:25pm projected to
+  ~356 min — tighter than the configured timeout itself and only ~4 min
+  under the hard cap, i.e. close to reproducing the exact 2026-08-31
+  failure mode with even less margin. 3:20pm projects to ~351 min instead,
+  keeping ~9 min under the hard cap, similar margin to what the 3:15pm fix
+  had. `timeout-minutes` left at 355 (still comfortably above the ~351 min
+  projection) — not yet verified live against a real 3:20pm close.
+
 - **Queued backup `schedule` run slipped past both EOD guards,
   2026-09-01 (Tuesday)** — same day the timeout fix above was confirmed
   clean, one of the three redundant `schedule` slots fired late (as
