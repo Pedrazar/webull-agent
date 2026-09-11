@@ -9,6 +9,20 @@ if ($powerStatus.PowerLineStatus -eq "Offline" -and $batteryPct -lt 20) {
     exit 0
 }
 
+# The GitHub Actions agent run is the only thing that ever writes trades.jsonl
+# -- this laptop's working copy is just a clone, so without pulling first the
+# review reads whatever was here as of its last manual pull. Confirmed live,
+# 2026-09-10/11: two straight days of real trading activity got reviewed
+# against a stale local trades.jsonl and reported as "no trading data" /
+# a possible missed trigger, when the trades were real and just sitting
+# unpulled on GitHub. `--ff-only` so a genuine conflict (e.g. uncommitted
+# local edits) fails loudly instead of the review silently running on
+# whatever state it finds.
+git pull origin main --ff-only
+if ($LASTEXITCODE -ne 0) {
+    Write-Output "[git] pull failed - reviewing against local data as-is, but note this may be stale"
+}
+
 # Without this, PowerShell decodes claude.exe's UTF-8 stdout (em dashes,
 # curly quotes, etc.) through the legacy console codepage instead, mangling
 # any non-ASCII character (confirmed live: em dashes came out as "ΓÇö").
