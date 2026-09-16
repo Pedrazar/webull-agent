@@ -96,3 +96,12 @@
 {"ts":"2026-09-15T14:40:00.384Z","event":"entry_rejected","symbol":"MSTZ","reason":"symbol_on_cooldown","price":4.41,"cooldownReason":"3 consecutive losses: -$3.00, -$45.00, -$21.00 (last 2026-09-14T19:20:25.059Z)"}
 {"ts":"2026-09-15T17:10:04.015Z","event":"entry_rejected","symbol":"MSTZ","reason":"symbol_on_cooldown","price":4.305,"cooldownReason":"3 consecutive losses: -$3.00, -$45.00, -$21.00 (last 2026-09-14T19:20:25.059Z)"}
 {"ts":"2026-09-15T18:38:00.680Z","event":"entry_rejected","symbol":"MSTZ","reason":"symbol_on_cooldown","price":4.348,"cooldownReason":"3 consecutive losses: -$3.00, -$45.00, -$21.00 (last 2026-09-14T19:20:25.059Z)"}
+{"ts":"2026-09-16T13:40:02.024Z","event":"entry_rejected","symbol":"MSTZ","reason":"symbol_on_cooldown","price":4.48,"cooldownReason":"3 consecutive losses: -$3.00, -$45.00, -$21.00 (last 2026-09-14T19:20:25.059Z)"}
+{"ts":"2026-09-16T14:58:18.098Z","event":"entry_rejected","symbol":"RCKT","reason":"volume_too_low","price":3.525,"volume":1000}
+{"ts":"2026-09-16T16:30:24.507Z","event":"missed_entry","symbol":"RETO","barTime":"2026-09-16T16:23:00.000+0000","price":10.86,"volume":481631}
+{"ts":"2026-09-16T17:02:00.319Z","event":"entry_rejected","symbol":"RETO","reason":"spread_too_wide","price":10.73,"spread":0.15}
+{"ts":"2026-09-16T17:38:00.471Z","event":"entry_rejected","symbol":"RETO","reason":"spread_too_wide","price":10.35,"spread":0.07}
+{"ts":"2026-09-16T18:05:01.667Z","event":"entry_rejected","symbol":"RETO","reason":"spread_too_wide","price":10.46,"spread":0.08}
+{"ts":"2026-09-16T18:19:00.861Z","event":"entry_rejected","symbol":"MSTZ","reason":"symbol_on_cooldown","price":4.67,"cooldownReason":"3 consecutive losses: -$3.00, -$45.00, -$21.00 (last 2026-09-14T19:20:25.059Z)"}
+{"ts":"2026-09-16T18:37:00.297Z","event":"entry_rejected","symbol":"MSTZ","reason":"symbol_on_cooldown","price":4.745,"cooldownReason":"3 consecutive losses: -$3.00, -$45.00, -$21.00 (last 2026-09-14T19:20:25.059Z)"}
+{"ts":"2026-09-16T18:53:00.670Z","event":"entry_rejected","symbol":"MSTZ","reason":"symbol_on_cooldown","price":4.734,"cooldownReason":"3 consecutive losses: -$3.00, -$45.00, -$21.00 (last 2026-09-14T19:20:25.059Z)"}
