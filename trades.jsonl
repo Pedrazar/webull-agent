@@ -105,3 +105,11 @@
 {"ts":"2026-09-16T18:19:00.861Z","event":"entry_rejected","symbol":"MSTZ","reason":"symbol_on_cooldown","price":4.67,"cooldownReason":"3 consecutive losses: -$3.00, -$45.00, -$21.00 (last 2026-09-14T19:20:25.059Z)"}
 {"ts":"2026-09-16T18:37:00.297Z","event":"entry_rejected","symbol":"MSTZ","reason":"symbol_on_cooldown","price":4.745,"cooldownReason":"3 consecutive losses: -$3.00, -$45.00, -$21.00 (last 2026-09-14T19:20:25.059Z)"}
 {"ts":"2026-09-16T18:53:00.670Z","event":"entry_rejected","symbol":"MSTZ","reason":"symbol_on_cooldown","price":4.734,"cooldownReason":"3 consecutive losses: -$3.00, -$45.00, -$21.00 (last 2026-09-14T19:20:25.059Z)"}
+{"ts":"2026-09-17T14:17:00.305Z","event":"entry_rejected","symbol":"RETO","reason":"price_out_of_range","price":0.6082}
+{"ts":"2026-09-17T14:18:06.879Z","event":"entry_placed","symbol":"NVTS","quantity":300,"requestedPrice":11.18,"filledPrice":11.18,"entryOrderId":"TMG61K6KQ8N63HMJL2MGU6IUL8","entryClientOrderId":"b0e8a160d36d4cf181cede6e0f637b06","stopPrice":11.03,"stopOrderId":"R5JAJNENTECGEAV472OQMPQ1NB","stopClientOrderId":"21fe184550de476b9bd3de1d5881db38","volume":18000}
+{"ts":"2026-09-17T14:42:02.265Z","event":"entry_placed","symbol":"MSTZ","quantity":300,"requestedPrice":4.255,"filledPrice":4.26,"entryOrderId":"8VJIJ4O55JHA7J3BVU96C08RM9","entryClientOrderId":"a574dbba6da546d79c65728d845ea750","stopPrice":4.11,"stopOrderId":"NFH6M8GPMJS9A7LI7BAGOG4378","stopClientOrderId":"5802d60acd9c49af843a3b2293a1c110","volume":27677}
+{"ts":"2026-09-17T15:07:18.054Z","event":"exit_filled","symbol":"NVTS","exitReason":"HARD_STOP","entryPrice":11.18,"exitPrice":11.03,"quantity":300,"realizedPnl":-45.00000000000011,"holdMinutes":49,"volume":7227}
+{"ts":"2026-09-17T15:11:02.857Z","event":"breakeven_move","symbol":"MSTZ","newStopPrice":4.26}
+{"ts":"2026-09-17T16:03:18.074Z","event":"exit_filled","symbol":"MSTZ","exitReason":"BREAKEVEN","entryPrice":4.26,"exitPrice":4.26,"quantity":300,"realizedPnl":0,"holdMinutes":81,"volume":12334}
+{"ts":"2026-09-17T16:44:00.275Z","event":"entry_rejected","symbol":"RETO","reason":"price_out_of_range","price":0.2147}
+{"ts":"2026-09-17T18:26:00.280Z","event":"entry_rejected","symbol":"RETO","reason":"price_out_of_range","price":0.2002}
