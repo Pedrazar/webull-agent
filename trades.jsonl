@@ -113,3 +113,6 @@
 {"ts":"2026-09-17T16:03:18.074Z","event":"exit_filled","symbol":"MSTZ","exitReason":"BREAKEVEN","entryPrice":4.26,"exitPrice":4.26,"quantity":300,"realizedPnl":0,"holdMinutes":81,"volume":12334}
 {"ts":"2026-09-17T16:44:00.275Z","event":"entry_rejected","symbol":"RETO","reason":"price_out_of_range","price":0.2147}
 {"ts":"2026-09-17T18:26:00.280Z","event":"entry_rejected","symbol":"RETO","reason":"price_out_of_range","price":0.2002}
+{"ts":"2026-09-18T13:31:01.532Z","event":"entry_rejected","symbol":"SECZ","reason":"spread_too_wide","price":9.46,"spread":0.33}
+{"ts":"2026-09-18T13:32:02.681Z","event":"entry_rejected","symbol":"NVTS","reason":"symbol_on_cooldown","price":11.41,"cooldownReason":"3 consecutive losses: -$45.00, -$45.00, -$45.00 (last 2026-09-17T15:07:18.054Z)"}
+{"ts":"2026-09-18T14:35:03.097Z","event":"entry_rejected","symbol":"SECZ","reason":"spread_too_wide","price":9.81,"spread":0.09}
