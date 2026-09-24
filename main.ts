@@ -91,7 +91,7 @@ const MIN_ENTRY_VOLUME = Number(process.env.AGENT_MIN_ENTRY_VOLUME ?? 5_000);
 
 // Always entry-eligible regardless of watchlist ranking — on top of, not
 // instead of, the top-N watchlist symbols below. Added 2026-08-22.
-const ALWAYS_ACTIVE_SYMBOLS = (process.env.AGENT_ALWAYS_ACTIVE_SYMBOLS ?? "MSTZ,NVTS")
+const ALWAYS_ACTIVE_SYMBOLS = (process.env.AGENT_ALWAYS_ACTIVE_SYMBOLS ?? "SMR,NVTS")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
