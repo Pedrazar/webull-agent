@@ -160,3 +160,4 @@
 {"ts":"2026-09-25T16:26:03.866Z","event":"breakeven_move","symbol":"NVTS","newStopPrice":12.17}
 {"ts":"2026-09-25T17:31:14.525Z","event":"exit_filled","symbol":"SMR","exitReason":"BREAKEVEN","entryPrice":8.41,"exitPrice":8.41,"quantity":300,"realizedPnl":0,"holdMinutes":128,"volume":82057}
 {"ts":"2026-09-25T19:20:18.046Z","event":"exit_filled","symbol":"NVTS","exitReason":"EOD","entryPrice":12.17,"exitPrice":12.37,"quantity":300,"realizedPnl":59.99999999999979,"holdMinutes":195,"volume":4367}
+{"ts":"2026-09-28T16:25:00.552Z","event":"entry_rejected","symbol":"AESI","reason":"volume_too_low","price":12.45,"volume":1600}
