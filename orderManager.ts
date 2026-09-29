@@ -87,7 +87,7 @@ export interface RiskConfig {
   quantity: number; // shares per entry
   minPrice: number; // only enter if price >= this (e.g. 1)
   maxPrice: number; // only enter if price <= this (e.g. 20)
-  maxSpread: number; // only enter if (ask - bid) < this, e.g. 0.03 — a wide spread on a low-priced stock eats the edge instantly on entry+exit
+  maxSpread: number; // only enter if (ask - bid) <= this, e.g. 0.03 — a wide spread on a low-priced stock eats the edge instantly on entry+exit
   minEntryVolume: number; // only enter if the triggering bar's volume >= this — filters thin/low-participation signal bars
   maxDailyLossUsd: number; // kill switch
   // (EOD timing itself is now handled in main.ts via Intl/America-New_York,
@@ -407,9 +407,9 @@ export class OrderManager {
       return;
     }
 
-    if (spread >= this.config.maxSpread) {
+    if (spread > this.config.maxSpread) {
       console.log(
-        `[risk] ${symbol} @ ${price} spread ${spread.toFixed(2)} >= max ${this.config.maxSpread}, skipping entry`
+        `[risk] ${symbol} @ ${price} spread ${spread.toFixed(2)} > max ${this.config.maxSpread}, skipping entry`
       );
       logTradeEvent({ event: "entry_rejected", symbol, reason: "spread_too_wide", price, spread });
       return;
