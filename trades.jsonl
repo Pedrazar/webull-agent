@@ -162,3 +162,13 @@
 {"ts":"2026-09-25T19:20:18.046Z","event":"exit_filled","symbol":"NVTS","exitReason":"EOD","entryPrice":12.17,"exitPrice":12.37,"quantity":300,"realizedPnl":59.99999999999979,"holdMinutes":195,"volume":4367}
 {"ts":"2026-09-28T16:25:00.552Z","event":"entry_rejected","symbol":"AESI","reason":"volume_too_low","price":12.45,"volume":1600}
 {"ts":"2026-09-29T13:31:00.156Z","event":"entry_rejected","symbol":"NVTS","reason":"spread_too_wide","price":12.48,"spread":0.03}
+{"ts":"2026-10-01T13:58:06.376Z","event":"entry_placed","symbol":"SMR","quantity":300,"requestedPrice":8.01,"filledPrice":8.01,"entryOrderId":"5FIUE3287URE9RFGO9ACSR8RRA","entryClientOrderId":"114b441a76814213abc8ea1713ad9a73","stopPrice":7.86,"stopOrderId":"5DJG9KMV9QDA7PJODK5BCEUIUA","stopClientOrderId":"9bfefdb40b314772b05f622f030b6662","volume":34832}
+{"ts":"2026-10-01T14:05:14.179Z","event":"exit_filled","symbol":"SMR","exitReason":"HARD_STOP","entryPrice":8.01,"exitPrice":7.86,"quantity":300,"realizedPnl":-44.999999999999844,"holdMinutes":7,"volume":39986}
+{"ts":"2026-10-01T14:34:01.927Z","event":"entry_placed","symbol":"NVTS","quantity":300,"requestedPrice":11.75,"filledPrice":11.76,"entryOrderId":"8KG6MJO7AEE19SG0U02NIAAIEA","entryClientOrderId":"ca1fbccd583a4813a715005fed50e85f","stopPrice":11.61,"stopOrderId":"24IS8UJETMVJFSKN3UP5B2D209","stopClientOrderId":"42415888f2bc459d9016b6eaca60491e","volume":66152}
+{"ts":"2026-10-01T16:28:23.733Z","event":"entry_rejected","symbol":"SGMT","reason":"spread_too_wide","price":9.55,"spread":0.04}
+{"ts":"2026-10-01T17:24:46.293Z","event":"entry_rejected","symbol":"SGMT","reason":"volume_too_low","price":9.66,"volume":205}
+{"ts":"2026-10-01T17:25:01.272Z","event":"breakeven_move","symbol":"NVTS","newStopPrice":11.76}
+{"ts":"2026-10-01T17:31:00.823Z","event":"trailing_start","symbol":"NVTS","trailingStopStep":0.1,"newStopOrderId":"GIJMA5N5MCUOFVMVJHL5MJCBKB","newStopClientOrderId":"2c21074625ef4265b6d03ba17466ca14"}
+{"ts":"2026-10-01T17:32:00.891Z","event":"trailing_move","symbol":"NVTS","newStopPrice":12.04}
+{"ts":"2026-10-01T17:33:02.505Z","event":"trailing_move","symbol":"NVTS","newStopPrice":12.06}
+{"ts":"2026-10-01T17:36:14.229Z","event":"exit_filled","symbol":"NVTS","exitReason":"TRAILING","entryPrice":11.76,"exitPrice":12.06,"quantity":300,"realizedPnl":90.00000000000021,"holdMinutes":182,"volume":39645}
