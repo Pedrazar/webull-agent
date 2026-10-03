@@ -466,35 +466,33 @@ export class OrderManager {
 
     const stopPrice = +(entryPrice - this.config.hardStopAmount).toFixed(2);
     const stopClientOrderId = newClientOrderId();
-    const stopOrder = baseOrderFields({
-      client_order_id: stopClientOrderId,
-      symbol,
-      side: "SELL",
-      order_type: "STOP_LOSS",
-      stop_price: String(stopPrice),
-      quantity: String(quantity),
-      time_in_force: "GTC",
-    });
-
-    const stopResult = await this.client.post<{
-      order_id?: string;
-      client_order_id?: string;
-      [key: string]: unknown;
-    }>("/openapi/trade/stock/order/place", {
-      account_id: this.config.accountId,
-      new_orders: [stopOrder],
-    });
-
     const entryOrderId = (entryResult.order_id as string) ?? null;
-    const stopOrderId = (stopResult.order_id as string) ?? null;
 
+    // Register the position and log entry_placed BEFORE attempting the stop
+    // placement below, not after. Found live 2026-10-02: the entry can fill
+    // (or be in the process of filling) at the broker while the immediate
+    // follow-up stop placement fails — Webull rejects a SELL stop against an
+    // entry that hasn't confirmed as FILLED yet with 417
+    // OPENAPI_OPEN_ORDER_HAS_BOX_ORDER ("Buy opening orders and sell opening
+    // orders ... cannot exist simultaneously"), which is exactly the case
+    // the pollOrderFill timeout above falls back from. The old code placed
+    // the stop first and only registered/logged the position after both
+    // orders succeeded — when the stop placement threw, the function exited
+    // before ever reaching that point, so a REAL, already-filling position
+    // was left completely untracked and unlogged. It then sat with zero
+    // resting stop-loss for the rest of the session (NVTS, 2026-10-02,
+    // -$54 realized only because the EOD flatten's broker-side query
+    // happened to catch it cold — a much larger loss was entirely possible
+    // with nothing managing it in between). Registering here first means
+    // checkForFills()/onPriceUpdate/closeAllEndOfDay all know about this
+    // position immediately regardless of what happens to the stop below.
     this.positions.set(symbol, {
       symbol,
       entryPrice,
       entryTime: Date.now(),
       quantity,
       entryOrderId: entryOrderId ?? "",
-      stopOrderId,
+      stopOrderId: null,
       stopClientOrderId,
       phase: "HARD_STOP",
       highestPrice: entryPrice,
@@ -510,10 +508,131 @@ export class OrderManager {
       entryOrderId,
       entryClientOrderId,
       stopPrice,
-      stopOrderId,
+      stopOrderId: null,
       stopClientOrderId,
       volume: this.latestVolume(symbol),
     });
+
+    const stopOrderId = await this.placeStopWithRetry(symbol, stopClientOrderId, stopPrice, quantity);
+    if (stopOrderId !== null) {
+      const pos = this.positions.get(symbol);
+      if (pos) pos.stopOrderId = stopOrderId;
+      return;
+    }
+
+    // Every retry failed — this position has no broker-side stop and never
+    // will via the normal path (ratchetTrailingStop/moveStopToBreakeven both
+    // need a live stopOrderId to replace). Rather than leave it riding
+    // naked until EOD, flatten it immediately: a market sell, same mechanism
+    // closeOneEndOfDay already uses for a position with no stop to cancel.
+    console.error(
+      `[risk] ${symbol}: stop placement failed after retries, flattening immediately rather than leaving it unprotected`
+    );
+    await this.emergencyFlatten(symbol);
+  }
+
+  /**
+   * Retries the stop-loss placement a few times — the 417
+   * OPENAPI_OPEN_ORDER_HAS_BOX_ORDER race (see enterLong above) is
+   * transient: the entry order just needs a moment to actually settle into
+   * FILLED at the broker before a SELL stop against it is accepted. Mirrors
+   * cancelOrderWithRetry's retry-with-backoff shape. Returns the stop's
+   * order_id on success, null if every attempt failed.
+   */
+  private async placeStopWithRetry(
+    symbol: string,
+    stopClientOrderId: string,
+    stopPrice: number,
+    quantity: number,
+    maxAttempts = 3,
+    delayMs = 2000
+  ): Promise<string | null> {
+    const stopOrder = baseOrderFields({
+      client_order_id: stopClientOrderId,
+      symbol,
+      side: "SELL",
+      order_type: "STOP_LOSS",
+      stop_price: String(stopPrice),
+      quantity: String(quantity),
+      time_in_force: "GTC",
+    });
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const stopResult = await this.client.post<{
+          order_id?: string;
+          client_order_id?: string;
+          [key: string]: unknown;
+        }>("/openapi/trade/stock/order/place", {
+          account_id: this.config.accountId,
+          new_orders: [stopOrder],
+        });
+        return (stopResult.order_id as string) ?? null;
+      } catch (err) {
+        if (attempt < maxAttempts) {
+          console.warn(
+            `[risk] ${symbol}: stop placement failed (attempt ${attempt}/${maxAttempts}), retrying in ${delayMs}ms: ${(err as Error).message}`
+          );
+          await sleep(delayMs);
+          continue;
+        }
+        console.error(`[risk] ${symbol}: stop placement failed on final attempt: ${(err as Error).message}`);
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Fail-safe for a position whose stop could never be placed (see
+   * enterLong above) — flattens it with a plain market sell, the same
+   * mechanism closeOneEndOfDay uses once a stop is already cancelled/absent.
+   * Logged with a dedicated exitReason so this is unambiguous in
+   * trades.jsonl/the daily review, distinct from a normal designed exit.
+   */
+  private async emergencyFlatten(symbol: string): Promise<void> {
+    const pos = this.positions.get(symbol);
+    if (!pos) return;
+
+    const flattenClientOrderId = newClientOrderId();
+    const flattenOrder = baseOrderFields({
+      client_order_id: flattenClientOrderId,
+      symbol,
+      side: "SELL",
+      order_type: "MARKET",
+      quantity: String(pos.quantity),
+      time_in_force: "DAY",
+    });
+
+    await this.client.post("/openapi/trade/stock/order/place", {
+      account_id: this.config.accountId,
+      new_orders: [flattenOrder],
+    });
+
+    const fill = await this.pollOrderFill(flattenClientOrderId);
+    const exitPrice = fill?.filledPrice ?? pos.entryPrice;
+    const quantity = fill?.filledQuantity || pos.quantity;
+    const realizedPnl = (exitPrice - pos.entryPrice) * quantity;
+    this.dailyPnl += realizedPnl;
+
+    if (!fill || fill.status !== "FILLED") {
+      console.warn(
+        `[risk] emergency flatten fill for ${symbol} not confirmed within poll window — ` +
+          `logging with entryPrice as a placeholder exitPrice, realizedPnl below is unreliable`
+      );
+    }
+
+    logTradeEvent({
+      event: "exit_filled",
+      symbol,
+      exitReason: "STOP_PLACEMENT_FAILED",
+      entryPrice: pos.entryPrice,
+      exitPrice,
+      quantity,
+      realizedPnl,
+      holdMinutes: Math.round((Date.now() - pos.entryTime) / 60_000),
+      volume: this.latestVolume(symbol),
+    });
+    this.positions.delete(symbol);
   }
 
   /**

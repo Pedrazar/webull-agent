@@ -70,7 +70,7 @@ export type TradeEvent =
   | {
       event: "exit_filled";
       symbol: string;
-      exitReason: "HARD_STOP" | "BREAKEVEN" | "TRAILING" | "EOD";
+      exitReason: "HARD_STOP" | "BREAKEVEN" | "TRAILING" | "EOD" | "STOP_PLACEMENT_FAILED";
       entryPrice: number;
       exitPrice: number;
       quantity: number;
