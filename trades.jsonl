@@ -204,3 +204,5 @@
 {"ts":"2026-10-08T18:33:17.784Z","event":"entry_rejected","symbol":"XNDU","reason":"volume_too_low","price":4.075,"volume":2467}
 {"ts":"2026-10-08T19:08:20.784Z","event":"entry_placed","symbol":"PRME","quantity":300,"requestedPrice":3.61,"filledPrice":3.61,"entryOrderId":"33J6U5BKUCPH18M3KO67CMCP59","entryClientOrderId":"7c8e89a665ec4cd69ffd858cb2f5b849","stopPrice":3.46,"stopOrderId":null,"stopClientOrderId":"6c26413d7a82485ba60f2bd9826dd57a","volume":11933}
 {"ts":"2026-10-08T19:20:13.134Z","event":"exit_filled","symbol":"PRME","exitReason":"EOD","entryPrice":3.61,"exitPrice":3.61,"quantity":300,"realizedPnl":0,"holdMinutes":12,"volume":1812}
+{"ts":"2026-10-09T13:42:05.077Z","event":"entry_placed","symbol":"PRME","quantity":300,"requestedPrice":3.67,"filledPrice":null,"entryOrderId":"17JO80QPFUFH8VMAFU6KDPPC89","entryClientOrderId":"161bc5d2cfc6496b8fdfb245af7acddc","stopPrice":3.52,"stopOrderId":null,"stopClientOrderId":"6ab3881ff83145dcb62b9b3773b3af96","volume":26447}
+{"ts":"2026-10-09T16:51:12.887Z","event":"entry_rejected","symbol":"EMAT","reason":"volume_too_low","price":1.76,"volume":3265}
