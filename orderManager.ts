@@ -588,6 +588,18 @@ export class OrderManager {
    * mechanism closeOneEndOfDay uses once a stop is already cancelled/absent.
    * Logged with a dedicated exitReason so this is unambiguous in
    * trades.jsonl/the daily review, distinct from a normal designed exit.
+   *
+   * Retries the placement itself (2026-10-14, after 2026-10-09/12 incidents:
+   * PRME and EMAT both hit this exact method subject to the SAME 417
+   * OPENAPI_OPEN_ORDER_HAS_BOX_ORDER race placeStopWithRetry exists for —
+   * the entry hadn't confirmed FILLED at Webull yet, so even a SELL meant
+   * to flatten got rejected. The original version had no retry here, threw
+   * immediately, and left the position stuck with a phantom stop for the
+   * rest of the session both times. If every attempt here still fails, the
+   * position stays registered (not silently dropped) — closeOneEndOfDay's
+   * now-resilient cancelStopIfLive call (same 2026-10-14 fix) gives it
+   * another real chance to flatten at EOD instead of aborting on the dead
+   * stopClientOrderId like it used to.
    */
   private async emergencyFlatten(symbol: string): Promise<void> {
     const pos = this.positions.get(symbol);
@@ -603,10 +615,31 @@ export class OrderManager {
       time_in_force: "DAY",
     });
 
-    await this.client.post("/openapi/trade/stock/order/place", {
-      account_id: this.config.accountId,
-      new_orders: [flattenOrder],
-    });
+    const maxAttempts = 5;
+    const delayMs = 2000;
+    let placed = false;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        await this.client.post("/openapi/trade/stock/order/place", {
+          account_id: this.config.accountId,
+          new_orders: [flattenOrder],
+        });
+        placed = true;
+        break;
+      } catch (err) {
+        if (attempt < maxAttempts) {
+          console.warn(
+            `[risk] ${symbol}: emergency flatten placement failed (attempt ${attempt}/${maxAttempts}), retrying in ${delayMs}ms: ${(err as Error).message}`
+          );
+          await sleep(delayMs);
+          continue;
+        }
+        console.error(
+          `[risk] ${symbol}: emergency flatten placement failed on final attempt, position remains open and tracked — relying on the EOD close to flatten it: ${(err as Error).message}`
+        );
+      }
+    }
+    if (!placed) return;
 
     const fill = await this.pollOrderFill(flattenClientOrderId);
     const exitPrice = fill?.filledPrice ?? pos.entryPrice;
@@ -928,47 +961,22 @@ export class OrderManager {
   }
 
   private async closeOneEndOfDay(pos: OpenPosition): Promise<void> {
-    if (pos.stopClientOrderId) {
-      await this.cancelOrderWithRetry(pos.stopClientOrderId);
-
-      // CONFIRMED live 2026-08-19: cancelling the stop and immediately
-      // placing the flattening market sell raced the broker's own
-      // bookkeeping — the cancel call returned success, but the sell was
-      // rejected as OAUTH_OPENAPI_ORDER_NOT_SUPPORT_REVERSE_OPTION
-      // ("will reverse an existing position") because the cancelled
-      // order's shares hadn't been released back to "available to sell"
-      // yet. Poll for the cancel to actually land (or, in the rarer case,
-      // for the stop to have filled a beat before we cancelled it) before
-      // placing the sell.
-      const cancelResult = await this.pollOrderFill(pos.stopClientOrderId, 5, 1000);
-      if (cancelResult?.status === "FILLED") {
-        // The stop-loss genuinely filled right at EOD, ahead of our
-        // cancel — already flat, nothing left to sell.
-        const exitPrice = cancelResult.filledPrice ?? pos.entryPrice;
-        const quantity = cancelResult.filledQuantity || pos.quantity;
-        const realizedPnl = (exitPrice - pos.entryPrice) * quantity;
-        this.dailyPnl += realizedPnl;
-        logTradeEvent({
-          event: "exit_filled",
-          symbol: pos.symbol,
-          exitReason: exitReasonForPhase(pos.phase),
-          entryPrice: pos.entryPrice,
-          exitPrice,
-          quantity,
-          realizedPnl,
-          holdMinutes: Math.round((Date.now() - pos.entryTime) / 60_000),
-          volume: this.latestVolume(pos.symbol),
-        });
-        this.positions.delete(pos.symbol);
-        return;
-      }
-      if (cancelResult === null) {
-        console.warn(
-          `[risk] EOD: cancel for ${pos.symbol}'s stop didn't confirm within the poll window, ` +
-            `proceeding with the closing sell anyway`
-        );
-      }
-    }
+    // Was its own near-duplicate of cancelStopIfLive's logic, minus the
+    // try/catch that makes THAT one resilient — found live 2026-10-09/12
+    // (PRME, EMAT): when enterLong()'s stop placement had already exhausted
+    // its retries and failed (see placeStopWithRetry/emergencyFlatten),
+    // pos.stopClientOrderId pointed at an order that was never actually
+    // created at the broker. The old unwrapped cancelOrderWithRetry call
+    // here threw "417 Order not present", which propagated out of this
+    // function entirely and aborted the whole EOD close for that position
+    // (caught only by closeAllEndOfDay's outer per-position try/catch,
+    // logged as "will remain open" — both positions rode the rest of the
+    // day, and one of them overnight, with zero stop and no flatten).
+    // cancelStopIfLive already handles exactly this (a dead/nonexistent
+    // order is not fatal, just means there's nothing to cancel) — reusing
+    // it here instead of a second, less-safe copy of the same logic.
+    const shouldSell = await this.cancelStopIfLive(pos);
+    if (!shouldSell) return; // stop turned out to be FILLED — cancelStopIfLive already logged the exit and cleared the position
 
     const eodClientOrderId = newClientOrderId();
     const eodOrder = baseOrderFields({
