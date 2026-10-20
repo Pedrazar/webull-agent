@@ -243,3 +243,13 @@
 {"ts":"2026-10-19T13:58:13.454Z","event":"exit_filled","symbol":"NVTS","exitReason":"HARD_STOP","entryPrice":8.77,"exitPrice":8.62,"quantity":300,"realizedPnl":-45.00000000000011,"holdMinutes":27,"volume":30273}
 {"ts":"2026-10-19T14:20:03.185Z","event":"entry_placed","symbol":"NVTS","quantity":300,"requestedPrice":8.75,"filledPrice":8.75,"entryOrderId":"APJO15CKUMV29DPG73IAJ8I578","entryClientOrderId":"9e44d160fc6f4d3f95b3af241949d148","stopPrice":8.6,"stopOrderId":null,"stopClientOrderId":"6ed219df4ca641ae98c1e148545220a3","volume":47225}
 {"ts":"2026-10-19T19:20:15.893Z","event":"exit_filled","symbol":"NVTS","exitReason":"EOD","entryPrice":8.75,"exitPrice":8.74,"quantity":300,"realizedPnl":-2.999999999999936,"holdMinutes":300,"volume":1819}
+{"ts":"2026-10-20T14:00:01.686Z","event":"entry_rejected","symbol":"NVTS","reason":"symbol_on_cooldown","price":8.53,"cooldownReason":"3 consecutive losses: -$45.00, -$45.00, -$3.00 (last 2026-10-19T19:20:15.893Z)"}
+{"ts":"2026-10-20T14:23:01.937Z","event":"entry_placed","symbol":"CLF","quantity":300,"requestedPrice":13.35,"filledPrice":13.35,"entryOrderId":"NIGAE5G73J358T2UMR2IVLAA4A","entryClientOrderId":"fd3da1806e354de384a4a1624068b0b7","stopPrice":13.2,"stopOrderId":null,"stopClientOrderId":"d9f03edc7a854c3e9373fa3bb01aa7fa","volume":82903}
+{"ts":"2026-10-20T14:28:01.142Z","event":"breakeven_move","symbol":"CLF","newStopPrice":13.35}
+{"ts":"2026-10-20T14:37:21.444Z","event":"exit_filled","symbol":"CLF","exitReason":"BREAKEVEN","entryPrice":13.35,"exitPrice":13.35,"quantity":300,"realizedPnl":0,"holdMinutes":14,"volume":42763}
+{"ts":"2026-10-20T14:38:02.086Z","event":"entry_placed","symbol":"MYGN","quantity":300,"requestedPrice":5.59,"filledPrice":5.59,"entryOrderId":"MUH21QGAL0IR8S3H8LC9B4G8NA","entryClientOrderId":"758627186ea44d9882ed8ba6f8006e22","stopPrice":5.44,"stopOrderId":null,"stopClientOrderId":"572cee3f55e447189c20aebaa80879a1","volume":30881}
+{"ts":"2026-10-20T14:59:01.067Z","event":"breakeven_move","symbol":"MYGN","newStopPrice":5.59}
+{"ts":"2026-10-20T15:43:05.077Z","event":"trailing_start","symbol":"MYGN","trailingStopStep":0.1,"newStopOrderId":"ENGKGR5OCFQBDMD3ALPI53UV09","newStopClientOrderId":"17dd7c69a93d41dca2bd7b5852b2e591"}
+{"ts":"2026-10-20T15:44:00.481Z","event":"trailing_move","symbol":"MYGN","newStopPrice":5.8}
+{"ts":"2026-10-20T15:46:01.278Z","event":"trailing_move","symbol":"MYGN","newStopPrice":5.85}
+{"ts":"2026-10-20T15:55:21.497Z","event":"exit_filled","symbol":"MYGN","exitReason":"TRAILING","entryPrice":5.59,"exitPrice":5.85,"quantity":300,"realizedPnl":77.99999999999994,"holdMinutes":77,"volume":92311}
