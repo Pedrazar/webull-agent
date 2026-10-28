@@ -34,7 +34,8 @@ export type TradeEvent =
         | "spread_too_wide"
         | "quote_unavailable"
         | "symbol_on_cooldown"
-        | "volume_too_low";
+        | "volume_too_low"
+        | "outside_entry_window";
       price: number;
       spread?: number | null;
       cooldownReason?: string; // only set for reason: "symbol_on_cooldown" — see cooldown.ts

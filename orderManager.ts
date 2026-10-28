@@ -70,6 +70,18 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// America/New_York wall-clock hour, for the minEntryHourEt gate below —
+// DST-safe (asks Intl directly rather than hardcoding a UTC offset).
+const nyHourFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/New_York",
+  hour: "2-digit",
+  hourCycle: "h23",
+});
+
+function nyHourOf(date: Date): number {
+  return parseInt(nyHourFormatter.formatToParts(date).find((p) => p.type === "hour")?.value ?? "-1", 10);
+}
+
 import { WebullClient } from "./webullClient";
 import crypto from "crypto";
 import { logTradeEvent } from "./tradeLogger";
@@ -90,6 +102,15 @@ export interface RiskConfig {
   maxSpread: number; // only enter if (ask - bid) <= this, e.g. 0.03 — a wide spread on a low-priced stock eats the edge instantly on entry+exit
   minEntryVolume: number; // only enter if the triggering bar's volume >= this — filters thin/low-participation signal bars
   maxDailyLossUsd: number; // kill switch
+  // Only allow NEW entries at/after this America/New_York wall-clock hour
+  // (e.g. 13 = 1pm ET). Added 2026-10-28 after analyzing the first ~2
+  // months of real trades.jsonl history: entries placed 9:30am-1pm ET
+  // (63 trades) lost -$911.70 at a 21% win rate, while entries placed
+  // 1pm ET or later (22 trades) made +$364.50 at a 50% win rate — the
+  // single clearest, largest-sample pattern in the whole dataset. Does
+  // NOT affect exits/EOD-close management of positions already open.
+  // undefined/omitted disables the gate entirely.
+  minEntryHourEt?: number;
   // (EOD timing itself is now handled in main.ts via Intl/America-New_York,
   // not here — these fields are unused, kept only to avoid a breaking
   // config-shape change. closeAllEndOfDay() below just closes on demand.)
@@ -389,6 +410,15 @@ export class OrderManager {
     if (cooldown) {
       console.warn(`[risk] ${symbol} on cooldown until ${new Date(cooldown.until).toISOString()}: ${cooldown.reason}`);
       logTradeEvent({ event: "entry_rejected", symbol, reason: "symbol_on_cooldown", price, cooldownReason: cooldown.reason });
+      return;
+    }
+
+    if (this.config.minEntryHourEt !== undefined && nyHourOf(new Date()) < this.config.minEntryHourEt) {
+      console.log(
+        `[risk] ${symbol} @ ${price} rejected — before the ${this.config.minEntryHourEt}:00 ET entry window ` +
+          `(morning entries are historically net-negative for this strategy), skipping entry`
+      );
+      logTradeEvent({ event: "entry_rejected", symbol, reason: "outside_entry_window", price });
       return;
     }
 

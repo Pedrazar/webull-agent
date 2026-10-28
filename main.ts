@@ -90,8 +90,16 @@ const COOLDOWN_DAYS = Number(process.env.AGENT_COOLDOWN_DAYS ?? 2);
 const MIN_ENTRY_VOLUME = Number(process.env.AGENT_MIN_ENTRY_VOLUME ?? 5_000);
 
 // Always entry-eligible regardless of watchlist ranking — on top of, not
-// instead of, the top-N watchlist symbols below. Added 2026-08-22.
-const ALWAYS_ACTIVE_SYMBOLS = (process.env.AGENT_ALWAYS_ACTIVE_SYMBOLS ?? "SMR,NVTS")
+// instead of, the top-N watchlist symbols below. Added 2026-08-22, default
+// was "SMR,NVTS" through 2026-10-28. Analysis of the first ~2 months of
+// trades.jsonl on that date found SMR/NVTS/MSTZ (the symbols that have
+// cycled through this slot) net -$375 combined — 71% of the agent's
+// entire -$526.20 cumulative loss over that period — versus genuinely
+// screener-ranked symbols, which were net profitable overall. Guaranteeing
+// entries regardless of real setup quality was the single biggest drag
+// found, so the default is now empty: entries are purely screener-driven
+// unless this env var is explicitly set.
+const ALWAYS_ACTIVE_SYMBOLS = (process.env.AGENT_ALWAYS_ACTIVE_SYMBOLS ?? "")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
@@ -338,6 +346,10 @@ async function main() {
     maxSpread: 0.03,
     minEntryVolume: MIN_ENTRY_VOLUME,
     maxDailyLossUsd: 150,
+    // See RiskConfig's minEntryHourEt doc comment — added 2026-10-28,
+    // backed by trades.jsonl history (9:30am-1pm ET entries: -$911.70 at
+    // 21% win rate; 1pm ET or later: +$364.50 at 50% win rate).
+    minEntryHourEt: Number(process.env.AGENT_MIN_ENTRY_HOUR_ET ?? 13),
   });
 
   // Cooldown symbols that just lost COOLDOWN_STREAK times in a row —
