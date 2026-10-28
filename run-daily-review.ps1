@@ -109,8 +109,32 @@ Task:
 1. Filter trades.jsonl to today's date (compare the `ts` field's date
    portion to today's date).
 2. Compute: entries placed, entries rejected (and why), exits by
-   exitReason, win rate (realizedPnl > 0), total realized P&L, average
-   winner, average loser, average hold time.
+   exitReason, total realized P&L, average winner, average loser, average
+   hold time, and the day's win rate (realizedPnl > 0). Treat that win
+   rate as a secondary, noisy number, not the headline -- on a single day
+   with well under 10 trades, it swinging between 0% and 100% is normal
+   variance, not a signal, and should not be reported as if it were. The
+   metric that should drive the narrative is expectancy (avg winner x
+   win% - avg loser x loss%) and the P&L trend over time, not whether any
+   single day's hit rate cleared some bar.
+2a. Also read the FULL trades.jsonl (not just today) and report a short
+   "Trend" section, placed right after the opening summary paragraph:
+   cumulative realized P&L across the entire log to date, plus the
+   rolling win rate / avg winner / avg loser over the most recent 20
+   closed trades (fewer if history is shorter than that). This is the
+   context that actually matters day to day -- a single day never
+   overrides it, it either continues or breaks the trend.
+2b. Two config changes took effect starting 2026-10-28 (see CLAUDE.md's
+   "Added 2026-10-28" entries and commit 26c5ee5): new entries are now
+   blocked before 1pm ET (OrderManager.minEntryHourEt), and the forced
+   AGENT_ALWAYS_ACTIVE_SYMBOLS override (previously SMR,NVTS) was emptied
+   out. For any trading day on or after 2026-10-28, add a one-line sanity
+   check to the report: do all of today's entry_placed events have a `ts`
+   at/after 17:00 UTC (1pm ET)? Did any entry happen in a symbol outside
+   today's actual watchlist.json picks (which would mean something is
+   still forcing an entry)? Call out a violation explicitly if found --
+   otherwise a brief "entry-window and always-active changes held" is
+   enough.
 3. Identify what worked and what didn't, concretely -- e.g. "3 of 4 exits
    were HARD_STOP, meaning entries rarely reached the favorable move
    needed for breakeven" or "the one EOD exit lost money -- the position
@@ -133,7 +157,8 @@ Task:
    is a small sample -- say so explicitly, and flag if the sample size is
    too small to draw a real conclusion.
 5. Format your reply as the full markdown report: a one-paragraph summary
-   at the top, a metrics table, then "What worked", "What didn't", a
+   at the top, then the "Trend" section from step 2a, a metrics table,
+   then "What worked", "What didn't", a
    "Missed entries" section (only if any missed_entry events exist for
    today -- omit entirely otherwise), an "Active cooldowns" section (only
    if any symbol_on_cooldown rejections exist for today -- omit entirely
