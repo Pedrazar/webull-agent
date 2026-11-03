@@ -79,16 +79,51 @@ jobs:
       # Runs even if the agent step failed/timed out, so a partial day's
       # trades.jsonl/watchlist.json still get saved instead of lost with
       # the ephemeral runner filesystem.
+      #
+      # CONFIRMED live multiple times (2026-09-01/09-08, 2026-10-09,
+      # 2026-11-03) that a plain `git pull --rebase` here can hit a real
+      # content conflict against another concurrent run's already-pushed
+      # commit (same three files, both sides appended/regenerated
+      # different content) — the job used to just error out on that,
+      # silently discarding this run's own trades.jsonl line(s). 2026-10-09
+      # lost a real +$96 filled trade this way; 2026-11-03 only lost a
+      # log-only missed_entry, but it's the same gap. Fixed 2026-11-03:
+      #   - .gitattributes declares trades.jsonl/daily-notes.jsonl as
+      #     merge=union (pure append-only logs — the only correct merge is
+      #     "keep every line from both sides") and watchlist.json as
+      #     merge=ours (fully regenerated every run, never appended to, so
+      #     there's nothing to reconcile — just keep whichever copy is
+      #     already on the branch being rebased onto).
+      #   - merge.ours.driver must be registered locally every run — a
+      #     .gitattributes merge= name only refers to a driver, it doesn't
+      #     define one. "true" is git's own documented built-in no-op
+      #     driver for exactly this (see gitattributes(5)'s merge=ours
+      #     example).
+      #   - A short retry loop around pull+push, for the SEPARATE (much
+      #     more common) failure mode these merge drivers don't address:
+      #     origin moving again between this attempt's rebase and its own
+      #     push. Content conflicts in these three files should now
+      #     auto-resolve via the drivers above with no retry needed at all.
       - name: Commit trade log + watchlist
         if: always()
         run: |
           git config user.name "webull-agent"
           git config user.email "actions@users.noreply.github.com"
+          git config merge.ours.driver true
           git add trades.jsonl watchlist.json daily-notes.jsonl
           if git diff --cached --quiet; then
             echo "nothing to commit"
-          else
-            git commit -m "agent run $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            git pull --rebase origin main
-            git push origin HEAD:main
+            exit 0
           fi
+          git commit -m "agent run $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then
+              echo "pushed on attempt $attempt"
+              exit 0
+            fi
+            echo "attempt $attempt failed, retrying..."
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 5))
+          done
+          echo "::error::failed to push trade log after 5 attempts -- data only exists in this ephemeral runner's workspace, check the run log"
+          exit 1

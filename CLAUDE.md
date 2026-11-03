@@ -416,6 +416,29 @@ waking up on schedule, with the same reliability caveats as before.
     — always verify with a real broker-side positions/orders check (like
     `checkPositions.ts`) after cancelling, don't just trust
     `trades.jsonl` or the run's reported status.
+  - **Fixed 2026-11-03, after recurring again (2026-10-09 lost a real
+    +$96 filled trade; 2026-11-03 lost a log-only `missed_entry`)**: the
+    root cause both times was that `git pull --rebase` in the commit step
+    has no recovery path for a genuine content conflict — any two
+    concurrent runs that both touch `trades.jsonl`/`watchlist.json`/
+    `daily-notes.jsonl` (which is every pair of runs, by design) could
+    conflict on exact line context even though the real intent is always
+    trivial to reconcile (keep both sides' new log lines; for
+    `watchlist.json`, which is fully regenerated every run rather than
+    appended to, just keep whichever snapshot is already on the branch).
+    `.gitattributes` now declares `trades.jsonl`/`daily-notes.jsonl` as
+    `merge=union` and `watchlist.json` as `merge=ours`; `agent.yml`'s
+    commit step registers `git config merge.ours.driver true` (the
+    `merge=ours` name only refers to a driver — it has to be defined
+    locally every run) and wraps `pull --rebase && push` in a 5-attempt
+    retry loop for the separate, more common race of origin moving again
+    between an attempt's rebase and its own push. Verified in a scratch
+    repo before shipping: two commits that both append different
+    `trades.jsonl` lines and both regenerate `watchlist.json` now rebase
+    with **zero conflicts** — the union keeps every log line from both
+    sides, and `ours` cleanly drops the less-important regenerated
+    watchlist from whichever side loses. Not yet verified against a real
+    concurrent-run race in production — watch for one.
 
 - **No market-holiday awareness → a wasted ~5-hour session on Labor Day,
   plus a real GitHub Actions billing scare, 2026-09-07 (Monday)** — the

@@ -1,0 +1,17 @@
+# trades.jsonl and daily-notes.jsonl are pure append-only logs — every line
+# is an independent JSON object, so when two concurrent agent runs each
+# append different new lines, the only correct merge is to keep ALL of
+# them from both sides. git's built-in "union" driver does exactly that.
+trades.jsonl merge=union
+daily-notes.jsonl merge=union
+
+# watchlist.json is fully REGENERATED from scratch every run (never
+# appended to), so unioning two snapshots of it would produce garbled/
+# duplicate-keyed JSON. It's also purely advisory (main.ts re-runs the
+# live screener itself and only falls back to this file's content if that
+# fails) — on a conflict there is no real reconciliation to do, so just
+# keep whichever copy is already on the branch being rebased onto
+# (merge=ours; see agent.yml's "git config merge.ours.driver true" for
+# the no-op driver this refers to, and gitattributes(5) for why that
+# config line is still needed even with this file present).
+watchlist.json merge=ours
