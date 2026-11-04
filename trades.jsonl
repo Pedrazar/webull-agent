@@ -308,3 +308,10 @@
 {"ts":"2026-10-30T19:20:16.563Z","event":"exit_filled","symbol":"PURR","exitReason":"EOD","entryPrice":10.82,"exitPrice":10.75,"quantity":300,"realizedPnl":-21.000000000000085,"holdMinutes":3,"volume":15837}
 {"ts":"2026-11-02T14:31:04.796Z","event":"entry_rejected","symbol":"CPRI","reason":"outside_entry_window","price":19.27}
 {"ts":"2026-11-03T20:20:09.841Z","event":"entry_rejected","symbol":"BLZE","reason":"volume_too_low","price":7.95,"volume":4115}
+{"ts":"2026-11-04T15:19:04.508Z","event":"entry_rejected","symbol":"BLZE","reason":"outside_entry_window","price":8.48}
+{"ts":"2026-11-04T16:38:00.134Z","event":"entry_rejected","symbol":"ARRY","reason":"outside_entry_window","price":5.47}
+{"ts":"2026-11-04T17:30:15.504Z","event":"missed_entry","symbol":"RIOT","barTime":"2026-11-04T17:24:00.000+0000","price":15.86,"volume":98712}
+{"ts":"2026-11-04T19:30:01.997Z","event":"entry_placed","symbol":"ARRY","quantity":300,"requestedPrice":5.29,"filledPrice":5.29,"entryOrderId":"TSJUSFBLG60I0J724A1E77D89A","entryClientOrderId":"2ccf0facaf374336992b9c695b30c49c","stopPrice":5.14,"stopOrderId":null,"stopClientOrderId":"31767b1847ae42dd81375456b48b9437","volume":21170}
+{"ts":"2026-11-04T20:20:01.687Z","event":"entry_placed","symbol":"RIOT","quantity":300,"requestedPrice":15.89,"filledPrice":15.89,"entryOrderId":"GBJQU08NV2KI1AHJV4UUPP6HH9","entryClientOrderId":"acd306ab21264aee9d2ced108a984c99","stopPrice":15.74,"stopOrderId":null,"stopClientOrderId":"77242a6de5b4458eb83448ad6bd13a41","volume":44217}
+{"ts":"2026-11-04T20:20:19.230Z","event":"exit_filled","symbol":"ARRY","exitReason":"EOD","entryPrice":5.29,"exitPrice":5.44,"quantity":300,"realizedPnl":45.00000000000011,"holdMinutes":50,"volume":23520}
+{"ts":"2026-11-04T20:20:23.325Z","event":"exit_filled","symbol":"RIOT","exitReason":"EOD","entryPrice":15.89,"exitPrice":15.83,"quantity":300,"realizedPnl":-18.00000000000015,"holdMinutes":0,"volume":44217}
