@@ -315,3 +315,11 @@
 {"ts":"2026-11-04T20:20:01.687Z","event":"entry_placed","symbol":"RIOT","quantity":300,"requestedPrice":15.89,"filledPrice":15.89,"entryOrderId":"GBJQU08NV2KI1AHJV4UUPP6HH9","entryClientOrderId":"acd306ab21264aee9d2ced108a984c99","stopPrice":15.74,"stopOrderId":null,"stopClientOrderId":"77242a6de5b4458eb83448ad6bd13a41","volume":44217}
 {"ts":"2026-11-04T20:20:19.230Z","event":"exit_filled","symbol":"ARRY","exitReason":"EOD","entryPrice":5.29,"exitPrice":5.44,"quantity":300,"realizedPnl":45.00000000000011,"holdMinutes":50,"volume":23520}
 {"ts":"2026-11-04T20:20:23.325Z","event":"exit_filled","symbol":"RIOT","exitReason":"EOD","entryPrice":15.89,"exitPrice":15.83,"quantity":300,"realizedPnl":-18.00000000000015,"holdMinutes":0,"volume":44217}
+{"ts":"2026-11-05T14:30:17.243Z","event":"missed_entry","symbol":"PPTA","barTime":"2026-11-04T20:58:00.000+0000","price":16.335,"volume":108777}
+{"ts":"2026-11-05T14:31:01.597Z","event":"entry_rejected","symbol":"ARRY","reason":"outside_entry_window","price":5.37}
+{"ts":"2026-11-05T14:31:04.985Z","event":"entry_rejected","symbol":"NG","reason":"outside_entry_window","price":6.38}
+{"ts":"2026-11-05T16:14:00.452Z","event":"entry_rejected","symbol":"RIOT","reason":"outside_entry_window","price":13.5}
+{"ts":"2026-11-05T16:19:03.162Z","event":"entry_rejected","symbol":"NG","reason":"outside_entry_window","price":5.94}
+{"ts":"2026-11-05T16:20:05.295Z","event":"entry_rejected","symbol":"PPTA","reason":"outside_entry_window","price":16.18}
+{"ts":"2026-11-05T16:21:03.200Z","event":"entry_rejected","symbol":"ARRY","reason":"outside_entry_window","price":4.92}
+{"ts":"2026-11-05T17:45:01.721Z","event":"entry_rejected","symbol":"XERS","reason":"outside_entry_window","price":12.92}
