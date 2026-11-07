@@ -125,16 +125,18 @@ Task:
    context that actually matters day to day -- a single day never
    overrides it, it either continues or breaks the trend.
 2b. Two config changes took effect starting 2026-10-28 (see CLAUDE.md's
-   "Added 2026-10-28" entries and commit 26c5ee5): new entries are now
+   "Added 2026-10-28" entries and commit 26c5ee5): new entries were
    blocked before 1pm ET (OrderManager.minEntryHourEt), and the forced
    AGENT_ALWAYS_ACTIVE_SYMBOLS override (previously SMR,NVTS) was emptied
-   out. For any trading day on or after 2026-10-28, add a one-line sanity
-   check to the report: do all of today's entry_placed events have a `ts`
-   at/after 17:00 UTC (1pm ET)? Did any entry happen in a symbol outside
-   today's actual watchlist.json picks (which would mean something is
-   still forcing an entry)? Call out a violation explicitly if found --
-   otherwise a brief "entry-window and always-active changes held" is
-   enough.
+   out. The 1pm ET entry-window block was removed again on 2026-11-07 at
+   the user's request (see CLAUDE.md's "removed 2026-11-07" note) -- so
+   for trading days from 2026-10-28 through 2026-11-06, still check that
+   entry_placed events have a `ts` at/after 17:00 UTC; for 2026-11-07
+   onward, that check no longer applies and morning entries are expected.
+   The always-active-symbols check still applies for all days on or after
+   2026-10-28: did any entry happen in a symbol outside that day's actual
+   watchlist.json picks (which would mean something is still forcing an
+   entry)? Call out a violation explicitly if found.
 3. Identify what worked and what didn't, concretely -- e.g. "3 of 4 exits
    were HARD_STOP, meaning entries rarely reached the favorable move
    needed for breakeven" or "the one EOD exit lost money -- the position

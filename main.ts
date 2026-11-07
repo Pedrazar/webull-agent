@@ -346,10 +346,14 @@ async function main() {
     maxSpread: 0.03,
     minEntryVolume: MIN_ENTRY_VOLUME,
     maxDailyLossUsd: 150,
-    // See RiskConfig's minEntryHourEt doc comment — added 2026-10-28,
-    // backed by trades.jsonl history (9:30am-1pm ET entries: -$911.70 at
-    // 21% win rate; 1pm ET or later: +$364.50 at 50% win rate).
-    minEntryHourEt: Number(process.env.AGENT_MIN_ENTRY_HOUR_ET ?? 13),
+    // minEntryHourEt removed 2026-11-07 (was 13/1pm ET) — re-opened morning
+    // entries at the user's request. See RiskConfig's minEntryHourEt doc
+    // comment for the 2026-10-28 data that originally motivated the gate
+    // (9:30am-1pm ET entries: -$911.70 at 21% win rate; 1pm ET or later:
+    // +$364.50 at 50% win rate) — not disproven, just overridden.
+    minEntryHourEt: process.env.AGENT_MIN_ENTRY_HOUR_ET
+      ? Number(process.env.AGENT_MIN_ENTRY_HOUR_ET)
+      : undefined,
   });
 
   // Cooldown symbols that just lost COOLDOWN_STREAK times in a row —
