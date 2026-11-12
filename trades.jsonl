@@ -330,3 +330,6 @@
 {"ts":"2026-11-06T17:29:09.534Z","event":"entry_rejected","symbol":"XERS","reason":"outside_entry_window","price":14.46}
 {"ts":"2026-11-06T18:10:01.680Z","event":"entry_rejected","symbol":"XERS","reason":"volume_too_low","price":14.63,"volume":4128}
 {"ts":"2026-11-06T19:07:01.934Z","event":"entry_rejected","symbol":"FLY","reason":"price_out_of_range","price":20.08}
+{"ts":"2026-11-12T16:54:07.664Z","event":"entry_placed","symbol":"GEVO","quantity":300,"requestedPrice":1.819,"filledPrice":null,"entryOrderId":"T6IMF89TFVC090NRL1K8JEJVV9","entryClientOrderId":"03d7e6b6dca740e195d02802574a46b4","stopPrice":1.67,"stopOrderId":null,"stopClientOrderId":"280a593fea894e788ed075b8c2a56ecd","volume":41709}
+{"ts":"2026-11-12T17:11:41.286Z","event":"entry_rejected","symbol":"FOSL","reason":"spread_too_wide","price":9.12,"spread":0.04}
+{"ts":"2026-11-12T20:20:23.800Z","event":"exit_filled","symbol":"GEVO","exitReason":"EOD","entryPrice":1.819,"exitPrice":1.91,"quantity":300,"realizedPnl":27.29999999999999,"holdMinutes":206,"volume":15937}
