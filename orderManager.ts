@@ -85,6 +85,7 @@ function nyHourOf(date: Date): number {
 import { WebullClient } from "./webullClient";
 import crypto from "crypto";
 import { logTradeEvent } from "./tradeLogger";
+import { supervisorPause } from "./supervisorControl";
 import { CooldownInfo } from "./cooldown";
 
 export interface RiskConfig {
@@ -405,6 +406,15 @@ export class OrderManager {
       return;
     }
     if (this.positions.has(symbol)) return; // already in a position, not logged as a rejection — this is routine, not a decision
+
+    // Supervisor pause switch (webull-supervisor control.json): blocks NEW
+    // entries only; open positions keep their stops/trailing/EOD close.
+    const pause = await supervisorPause("webull-agent");
+    if (pause.paused) {
+      console.warn(`[risk] supervisor paused new entries: ${pause.reason}, refusing entry on ${symbol}`);
+      logTradeEvent({ event: "entry_rejected", symbol, reason: "supervisor_paused", price, detail: pause.reason });
+      return;
+    }
 
     const cooldown = this.cooldownSymbols.get(symbol);
     if (cooldown) {

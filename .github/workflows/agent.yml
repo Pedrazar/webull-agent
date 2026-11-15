@@ -74,6 +74,7 @@ jobs:
           WEBULL_APP_SECRET: ${{ secrets.WEBULL_APP_SECRET }}
           WEBULL_BASE_URL: ${{ secrets.WEBULL_BASE_URL }}
           WEBULL_SANDBOX_ACCOUNT_ID: ${{ secrets.WEBULL_SANDBOX_ACCOUNT_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # read-only use: webull-supervisor control.json (pause switch)
         run: npx tsx main.ts
 
       # Runs even if the agent step failed/timed out, so a partial day's
