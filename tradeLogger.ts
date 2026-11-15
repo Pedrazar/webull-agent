@@ -35,11 +35,13 @@ export type TradeEvent =
         | "quote_unavailable"
         | "symbol_on_cooldown"
         | "volume_too_low"
-        | "outside_entry_window";
+        | "outside_entry_window"
+        | "supervisor_paused";
       price: number;
       spread?: number | null;
       cooldownReason?: string; // only set for reason: "symbol_on_cooldown" — see cooldown.ts
       volume?: number | null; // only set for reason: "volume_too_low"
+      detail?: string; // only set for reason: "supervisor_paused"
     }
   | {
       event: "breakeven_move";
