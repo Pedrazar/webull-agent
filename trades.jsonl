@@ -337,3 +337,7 @@
 {"ts":"2026-11-13T17:12:05.711Z","event":"entry_placed","symbol":"RZLT","quantity":300,"requestedPrice":3.845,"filledPrice":3.85,"entryOrderId":"BPG0B3D5C7F59NTLM5C7LDRN5B","entryClientOrderId":"5bbc4687d5554aa692116e0bfcd7660b","stopPrice":3.7,"stopOrderId":null,"stopClientOrderId":"19cff06e6d3a45aa963f5855b31cc8c6","volume":13677}
 {"ts":"2026-11-13T20:03:27.681Z","event":"entry_rejected","symbol":"HAWK","reason":"spread_too_wide","price":18.05,"spread":0.04}
 {"ts":"2026-11-13T20:20:23.327Z","event":"exit_filled","symbol":"RZLT","exitReason":"EOD","entryPrice":3.85,"exitPrice":3.76,"quantity":300,"realizedPnl":-27.000000000000092,"holdMinutes":188,"volume":4485}
+{"ts":"2026-11-16T14:37:06.013Z","event":"entry_rejected","symbol":"HAWK","reason":"spread_too_wide","price":18.42,"spread":0.06}
+{"ts":"2026-11-16T18:46:04.765Z","event":"entry_placed","symbol":"TU","quantity":300,"requestedPrice":9.32,"filledPrice":9.32,"entryOrderId":"MAJ4F88V58MD4TS2CNRFQ2TB58","entryClientOrderId":"78cc324e5561484580aedb8fbcaf1212","stopPrice":9.17,"stopOrderId":null,"stopClientOrderId":"84f759ef1a20401cb06414196b7bedda","volume":65535}
+{"ts":"2026-11-16T19:39:00.985Z","event":"breakeven_move","symbol":"TU","newStopPrice":9.32}
+{"ts":"2026-11-16T20:20:17.205Z","event":"exit_filled","symbol":"TU","exitReason":"EOD","entryPrice":9.32,"exitPrice":9.46,"quantity":300,"realizedPnl":42.00000000000017,"holdMinutes":94,"volume":2226}
