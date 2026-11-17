@@ -341,3 +341,5 @@
 {"ts":"2026-11-16T18:46:04.765Z","event":"entry_placed","symbol":"TU","quantity":300,"requestedPrice":9.32,"filledPrice":9.32,"entryOrderId":"MAJ4F88V58MD4TS2CNRFQ2TB58","entryClientOrderId":"78cc324e5561484580aedb8fbcaf1212","stopPrice":9.17,"stopOrderId":null,"stopClientOrderId":"84f759ef1a20401cb06414196b7bedda","volume":65535}
 {"ts":"2026-11-16T19:39:00.985Z","event":"breakeven_move","symbol":"TU","newStopPrice":9.32}
 {"ts":"2026-11-16T20:20:17.205Z","event":"exit_filled","symbol":"TU","exitReason":"EOD","entryPrice":9.32,"exitPrice":9.46,"quantity":300,"realizedPnl":42.00000000000017,"holdMinutes":94,"volume":2226}
+{"ts":"2026-11-17T14:32:04.221Z","event":"entry_rejected","symbol":"BXDC","reason":"spread_too_wide","price":17.24,"spread":0.56}
+{"ts":"2026-11-17T18:31:40.913Z","event":"entry_rejected","symbol":"BXDC","reason":"supervisor_paused","price":17.24,"detail":"Paper account hit the combined daily limit"}
