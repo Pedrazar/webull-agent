@@ -343,3 +343,7 @@
 {"ts":"2026-11-16T20:20:17.205Z","event":"exit_filled","symbol":"TU","exitReason":"EOD","entryPrice":9.32,"exitPrice":9.46,"quantity":300,"realizedPnl":42.00000000000017,"holdMinutes":94,"volume":2226}
 {"ts":"2026-11-17T14:32:04.221Z","event":"entry_rejected","symbol":"BXDC","reason":"spread_too_wide","price":17.24,"spread":0.56}
 {"ts":"2026-11-17T18:31:40.913Z","event":"entry_rejected","symbol":"BXDC","reason":"supervisor_paused","price":17.24,"detail":"Paper account hit the combined daily limit"}
+{"ts":"2026-11-18T14:54:06.761Z","event":"entry_rejected","symbol":"FUBO","reason":"volume_too_low","price":7.03,"volume":633}
+{"ts":"2026-11-18T16:35:02.288Z","event":"entry_rejected","symbol":"FUBO","reason":"spread_too_wide","price":6.94,"spread":0.04}
+{"ts":"2026-11-18T17:51:31.664Z","event":"entry_rejected","symbol":"FUBO","reason":"supervisor_paused","price":7.14,"detail":"Paper account hit the combined daily limit"}
+{"ts":"2026-11-18T19:35:03.032Z","event":"entry_rejected","symbol":"PONY","reason":"supervisor_paused","price":3.825,"detail":"Paper account hit the combined daily limit"}
