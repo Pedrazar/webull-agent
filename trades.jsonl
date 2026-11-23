@@ -363,3 +363,6 @@
 {"ts":"2026-11-20T14:55:14.811Z","event":"entry_placed","symbol":"PONY","quantity":300,"requestedPrice":3.55,"filledPrice":3.55,"entryOrderId":"72GONLTLJD3H42EB338LJMMRK9","entryClientOrderId":"4dab5ea982fa4b0d8db89d14e0053011","stopPrice":3.4,"stopOrderId":null,"stopClientOrderId":"a0f5b888bdf649a5aa86b233e52fc6ea","volume":11688}
 {"ts":"2026-11-20T14:57:04.142Z","event":"entry_rejected","symbol":"BRBR","reason":"spread_too_wide","price":15.59,"spread":0.09}
 {"ts":"2026-11-20T16:55:15.335Z","event":"exit_filled","symbol":"PONY","exitReason":"HARD_STOP","entryPrice":3.55,"exitPrice":3.41,"quantity":300,"realizedPnl":-41.9999999999999,"holdMinutes":120,"volume":1309}
+{"ts":"2026-11-23T14:31:04.814Z","event":"entry_placed","symbol":"PONY","quantity":300,"requestedPrice":3.55,"filledPrice":null,"entryOrderId":"5GJC2PGU7CI2AJ5MRMVU8O7VEB","entryClientOrderId":"361c87360aab416bb410e78d7a26d181","stopPrice":3.4,"stopOrderId":null,"stopClientOrderId":"ffde4b02f09a4b87bc185ebc7762d714","volume":7357}
+{"ts":"2026-11-23T14:39:03.528Z","event":"entry_rejected","symbol":"BRBR","reason":"spread_too_wide","price":14.73,"spread":0.16}
+{"ts":"2026-11-23T18:55:08.560Z","event":"entry_rejected","symbol":"BRBR","reason":"supervisor_paused","price":14.73,"detail":"Paper account hit the combined daily limit"}
