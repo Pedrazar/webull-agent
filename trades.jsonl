@@ -366,3 +366,13 @@
 {"ts":"2026-11-23T14:31:04.814Z","event":"entry_placed","symbol":"PONY","quantity":300,"requestedPrice":3.55,"filledPrice":null,"entryOrderId":"5GJC2PGU7CI2AJ5MRMVU8O7VEB","entryClientOrderId":"361c87360aab416bb410e78d7a26d181","stopPrice":3.4,"stopOrderId":null,"stopClientOrderId":"ffde4b02f09a4b87bc185ebc7762d714","volume":7357}
 {"ts":"2026-11-23T14:39:03.528Z","event":"entry_rejected","symbol":"BRBR","reason":"spread_too_wide","price":14.73,"spread":0.16}
 {"ts":"2026-11-23T18:55:08.560Z","event":"entry_rejected","symbol":"BRBR","reason":"supervisor_paused","price":14.73,"detail":"Paper account hit the combined daily limit"}
+{"ts":"2026-11-24T14:30:14.126Z","event":"missed_entry","symbol":"BRBR","barTime":"2026-11-23T20:58:00.000+0000","price":15.125,"volume":292092}
+{"ts":"2026-11-24T16:52:03.863Z","event":"entry_placed","symbol":"FLNC","quantity":300,"requestedPrice":4.025,"filledPrice":4.03,"entryOrderId":"S8IOKKQA3EMD14A8FLL823PFE9","entryClientOrderId":"d17a99d2cefc4bd19ea210334c03b02a","stopPrice":3.88,"stopOrderId":null,"stopClientOrderId":"adccfd02ad51498cadbdfa34c6fe8432","volume":21193}
+{"ts":"2026-11-24T17:27:02.302Z","event":"breakeven_move","symbol":"FLNC","newStopPrice":4.03}
+{"ts":"2026-11-24T17:37:01.677Z","event":"trailing_start","symbol":"FLNC","trailingStopStep":0.1,"newStopOrderId":"UPHSGN1P8GEA4CPT0FCG3LOIVB","newStopClientOrderId":"4f8eaef3b0264125a911049e89c5ec94"}
+{"ts":"2026-11-24T17:38:01.347Z","event":"trailing_move","symbol":"FLNC","newStopPrice":4.25}
+{"ts":"2026-11-24T17:41:12.323Z","event":"trailing_move","symbol":"FLNC","newStopPrice":4.26}
+{"ts":"2026-11-24T17:42:01.852Z","event":"trailing_move","symbol":"FLNC","newStopPrice":4.27}
+{"ts":"2026-11-24T17:53:14.555Z","event":"exit_filled","symbol":"FLNC","exitReason":"TRAILING","entryPrice":4.03,"exitPrice":4.25,"quantity":300,"realizedPnl":65.99999999999993,"holdMinutes":61,"volume":473379}
+{"ts":"2026-11-24T18:47:02.377Z","event":"entry_rejected","symbol":"FLNC","reason":"supervisor_paused","price":4.295,"detail":"Paper account hit the combined daily limit"}
+{"ts":"2026-11-24T20:20:19.267Z","event":"exit_filled","symbol":"PONY","exitReason":"EOD","entryPrice":3.53,"exitPrice":3.32,"quantity":300,"realizedPnl":-62.999999999999986,"holdMinutes":350,"volume":5500}
