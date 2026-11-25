@@ -376,3 +376,13 @@
 {"ts":"2026-11-24T17:53:14.555Z","event":"exit_filled","symbol":"FLNC","exitReason":"TRAILING","entryPrice":4.03,"exitPrice":4.25,"quantity":300,"realizedPnl":65.99999999999993,"holdMinutes":61,"volume":473379}
 {"ts":"2026-11-24T18:47:02.377Z","event":"entry_rejected","symbol":"FLNC","reason":"supervisor_paused","price":4.295,"detail":"Paper account hit the combined daily limit"}
 {"ts":"2026-11-24T20:20:19.267Z","event":"exit_filled","symbol":"PONY","exitReason":"EOD","entryPrice":3.53,"exitPrice":3.32,"quantity":300,"realizedPnl":-62.999999999999986,"holdMinutes":350,"volume":5500}
+{"ts":"2026-11-25T14:55:06.209Z","event":"entry_placed","symbol":"FLNC","quantity":300,"requestedPrice":3.965,"filledPrice":3.97,"entryOrderId":"K2G8VULG5TKD73F09QM9LL16N8","entryClientOrderId":"f96f8df7873749ffb82d45092798903d","stopPrice":3.82,"stopOrderId":null,"stopClientOrderId":"dd9a7660f07347bb940623cdd4907e47","volume":35910}
+{"ts":"2026-11-25T15:50:01.676Z","event":"breakeven_move","symbol":"FLNC","newStopPrice":3.97}
+{"ts":"2026-11-25T16:23:05.315Z","event":"trailing_start","symbol":"FLNC","trailingStopStep":0.1,"newStopOrderId":"9RHAT280I7H453L10S21V6KNJB","newStopClientOrderId":"d313e9db4aa54f03a4ea5a6c55c2f7e6"}
+{"ts":"2026-11-25T16:24:03.346Z","event":"trailing_move","symbol":"FLNC","newStopPrice":4.2}
+{"ts":"2026-11-25T16:26:01.653Z","event":"trailing_move","symbol":"FLNC","newStopPrice":4.23}
+{"ts":"2026-11-25T16:27:02.234Z","event":"trailing_move","symbol":"FLNC","newStopPrice":4.25}
+{"ts":"2026-11-25T16:30:24.332Z","event":"exit_filled","symbol":"FLNC","exitReason":"TRAILING","entryPrice":3.97,"exitPrice":4.25,"quantity":300,"realizedPnl":83.99999999999994,"holdMinutes":95,"volume":129620}
+{"ts":"2026-11-25T16:56:04.213Z","event":"entry_rejected","symbol":"FLNC","reason":"volume_too_low","price":4.25,"volume":4382}
+{"ts":"2026-11-25T20:14:08.274Z","event":"entry_placed","symbol":"LI","quantity":300,"requestedPrice":11.81,"filledPrice":11.81,"entryOrderId":"RQHA9KJH6BNI9L52FN1FLPDG1B","entryClientOrderId":"c0b450a5fe6645f1a42105d142a674d6","stopPrice":11.66,"stopOrderId":null,"stopClientOrderId":"030849b6fb224488a5c849f362d746c6","volume":27956}
+{"ts":"2026-11-25T20:20:27.349Z","event":"exit_filled","symbol":"LI","exitReason":"EOD","entryPrice":11.81,"exitPrice":11.84,"quantity":300,"realizedPnl":8.999999999999808,"holdMinutes":6,"volume":6809}
